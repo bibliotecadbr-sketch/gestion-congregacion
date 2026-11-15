@@ -1559,5 +1559,37 @@
             return date.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
         }
     </script>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+<script>
+  // PEGA AQUÍ TUS CREDENCIALES REALES DE FIREBASE CONSOLE
+  const firebaseConfig = {
+    apiKey: "AIzaSyCczrVnAhSPtKn-iHYbs8pgTR_6rN9xz3E",
+    authDomain: "integral-474fd.firebaseapp.com",
+    projectId: "integral-474fd",
+    storageBucket: "integral-474fd.firebasestorage.app",
+    messagingSenderId: "600156147998",
+    appId: "1:600156147998:web:c72dfc566c5e89881fb90f",
+    measurementId: "G-J31DPWR20E"
+  };
+
+  // Inicializar Firebase
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // El resto de la lógica de tu aplicación...
+</script>
+
+
+
+
+
 </body>
 </html>

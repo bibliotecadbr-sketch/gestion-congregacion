@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Integral de Congregación</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        /* Scrollbar personalizado suave */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Estilos estrictos para Impresión / PDF (Tablero de Anuncios) */
+        @media print {
+            @page {
+                size: landscape;
+                margin: 1.2cm;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            th, td {
+                border: 1px solid #334155 !important;
+                padding: 6px 8px !important;
+                text-align: left !important;
+                color: #000000 !important;
+                background-color: transparent !important;
+            }
+            th {
+                background-color: #e2e8f0 !important;
+                font-weight: 700 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Contenedor de Notificaciones Toast -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 no-print max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Pantalla de Carga Inicial -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
+        <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-lg font-medium tracking-wide">Conectando con la nube...</p>
+        <p class="text-xs text-slate-400 mt-1">Sincronizando datos de la congregación</p>
+    </div>
+
+    <!-- VISTA 1: AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-indigo-700 p-6 text-white text-center">
+                <div class="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                    <i data-lucide="book-open-check" class="w-8 h-8 text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight">Gestión de Congregación</h1>
+                <p class="text-indigo-200 text-sm mt-1">Plataforma sincronizada para programas y registros</p>
+            </div>
+
+            <!-- Tabs Login / Registro -->
+            <div class="flex border-b border-slate-200">
+                <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition">
+                    Iniciar Sesión
+                </button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition">
+                    Registrarse
+                </button>
+            </div>
+
+            <!-- Formulario Login -->
+            <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                        <input type="email" id="login-email" required placeholder="hermano@ejemplo.com"
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••"
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <span>Entrar al Sistema</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+
+            <!-- Formulario Registro -->
+            <form id="register-form" onsubmit="handleRegister(event)" class="hidden p-6 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre y Apellido</label>
+                    <input type="text" id="reg-name" required placeholder="Ej. Carlos Mendoza"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre Congregación</label>
+                        <input type="text" id="reg-cong-name" required placeholder="Ej. Central Norte"
+                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">N° Cong.</label>
+                        <input type="text" id="reg-cong-number" required placeholder="Ej. 14520"
+                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Correo Electrónico</label>
+                    <input type="email" id="reg-email" required placeholder="correo@ejemplo.com"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Contraseña (mín. 6 caracteres)</label>
+                    <input type="password" id="reg-password" required minlength="6" placeholder="••••••••"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                    <span>Tu cuenta quedará en estado <strong>Pendiente de Autorización</strong> hasta que un administrador de tu congregación la apruebe (el primer usuario registrado de la congregación será administrador automático).</span>
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition">
+                    Crear Cuenta y Solicitar Acceso
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VISTA 2: PENDIENTE DE AUTORIZACIÓN -->
+    <div id="pending-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-slate-100">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center border border-slate-200">
+            <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="clock" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">Pendiente de Autorización</h2>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                Hola <strong id="pending-user-name" class="text-slate-900"></strong>, tu solicitud de registro para la congregación
+                <strong id="pending-cong-info" class="text-indigo-700"></strong> ha sido recibida.
+            </p>
+            <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                Por seguridad, un administrador de tu congregación debe aprobar tu cuenta en la pestaña <strong>Administración</strong> antes de que puedas visualizar o editar los programas. Esta pantalla se actualizará automáticamente en cuanto seas aprobado.
+            </div>
+            <button onclick="handleLogout()" class="mt-6 w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-xl transition flex items-center justify-center gap-2">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- VISTA 3: APLICACIÓN PRINCIPAL -->
+    <div id="app-view" class="hidden flex-1 flex flex-col">
+
+        <!-- Cabecera Principal (Oculta al imprimir) -->
+        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-inner">
+                        <i data-lucide="calendar-check-2" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 id="header-cong-name" class="font-bold text-base sm:text-lg leading-tight">Congregación</h1>
+                            <span id="header-cong-number" class="text-xs bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded-full font-mono">#0000</span>
+                        </div>
+                        <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                            <span id="header-user-name">Usuario</span>
+                            <span>•</span>
+                            <span id="header-user-role" class="text-emerald-400 font-medium">Aprobado</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5" title="Imprimir vista actual o guardar como PDF">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        <span>Imprimir / PDF</span>
+                    </button>
+                    <button onclick="handleLogout()" class="p-2 bg-slate-800 hover:bg-rose-600/90 text-slate-300 hover:text-white rounded-xl transition" title="Cerrar Sesión">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navegación por Pestañas (Scrollable en móvil) -->
+            <nav class="bg-slate-800/90 border-t border-slate-700/80 overflow-x-auto">
+                <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
+                    <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn active-tab whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i> Servicio del Campo
+                    </button>
+                    <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="store" class="w-4 h-4"></i> Predicación Pública
+                    </button>
+                    <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="mic" class="w-4 h-4"></i> Asignaciones Cong.
+                    </button>
+                    <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="presentation" class="w-4 h-4"></i> Discursos Públicos
+                    </button>
+                    <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Vida y Ministerio
+                    </button>
+                    <button onclick="switchModule('asistencia')" data-tab="asistencia" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="users" class="w-4 h-4"></i> Asistencia
+                    </button>
+                    <button onclick="switchModule('publicaciones')" data-tab="publicaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="package" class="w-4 h-4"></i> Publicaciones
+                    </button>
+                    <button onclick="switchModule('admin')" data-tab="admin" id="nav-tab-admin" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Administración
+                        <span id="pending-badge" class="hidden bg-amber-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Encabezado Exclusivo para Impresión -->
+        <div class="hidden print-only mb-4 border-b-2 border-slate-800 pb-2">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h1 id="print-cong-title" class="text-xl font-bold uppercase tracking-wide">CONGREGACIÓN</h1>
+                    <h2 id="print-module-title" class="text-base font-semibold text-slate-700">PROGRAMA OFICIAL</h2>
+                </div>
+                <div class="text-right text-xs text-slate-600">
+                    <p>Tablero de Anuncios</p>
+                    <p id="print-date"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido Dinámico de Módulos -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 print-container">
+
+            <!-- MÓDULO 1: PROGRAMADOR DEL SERVICIO DEL CAMPO -->
+            <section id="mod-campo" class="module-section space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Programador del Servicio del Campo</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Salidas de predicación con listas compartidas en tiempo real (Conductores, Territorios y Puntos de Encuentro).</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="openCatalogQuickModal()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs sm:text-sm font-medium rounded-xl transition flex items-center gap-1.5">
+                            <i data-lucide="list-plus" class="w-4 h-4"></i> Editar Listas
+                        </button>
+                        <button onclick="openRecordModal('campo')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Nueva Salida
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha / Día</th>
+                                    <th class="py-3.5 px-4">Hora</th>
+                                    <th class="py-3.5 px-4">Conductor Asignado</th>
+                                    <th class="py-3.5 px-4">Territorio(s)</th>
+                                    <th class="py-3.5 px-4">Punto de Encuentro</th>
+                                    <th class="py-3.5 px-4">Notas</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-campo" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 2: PREDICACIÓN PÚBLICA (EXHIBIDORES) -->
+            <section id="mod-publica" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Programador de Predicación Pública</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Turnos y ubicaciones de exhibidores portátiles y mesas.</p>
+                    </div>
+                    <button onclick="openRecordModal('publica')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Agregar Turno
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha</th>
+                                    <th class="py-3.5 px-4">Horario / Turno</th>
+                                    <th class="py-3.5 px-4">Punto / Ubicación</th>
+                                    <th class="py-3.5 px-4">Publicador 1</th>
+                                    <th class="py-3.5 px-4">Publicador 2</th>
+                                    <th class="py-3.5 px-4">Observaciones</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-publica" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 3: ASIGNACIONES DE CONGREGACIÓN -->
+            <section id="mod-asignaciones" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Asignaciones de la Congregación</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Acomodadores, audio/video, micrófonos, lectura de La Atalaya y oraciones.</p>
+                    </div>
+                    <button onclick="openRecordModal('asignaciones')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nueva Asignación
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha</th>
+                                    <th class="py-3.5 px-4">Reunión</th>
+                                    <th class="py-3.5 px-4">Acomodadores</th>
+                                    <th class="py-3.5 px-4">Audio / Video</th>
+                                    <th class="py-3.5 px-4">Micrófonos</th>
+                                    <th class="py-3.5 px-4">Lector Atalaya</th>
+                                    <th class="py-3.5 px-4">Oración Final</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-asignaciones" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 4: DISCURSOS PÚBLICOS -->
+            <section id="mod-discursos" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Programador de Discursos Públicos</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Oradores visitantes y locales, bosquejos, presidentes y hospitalidad.</p>
+                    </div>
+                    <button onclick="openRecordModal('discursos')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Programar Discurso
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha</th>
+                                    <th class="py-3.5 px-4">Orador</th>
+                                    <th class="py-3.5 px-4">Congregación</th>
+                                    <th class="py-3.5 px-4">N° y Título del Bosquejo</th>
+                                    <th class="py-3.5 px-4">Presidente</th>
+                                    <th class="py-3.5 px-4">Hospitalidad</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-discursos" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 5: REUNIÓN VIDA Y MINISTERIO -->
+            <section id="mod-vidaministerio" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Reunión Vida y Ministerio Cristianos</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Programa semanal detallado: Tesoros, Seamos Mejores Maestros y Nuestra Vida Cristiana.</p>
+                    </div>
+                    <button onclick="openRecordModal('vidaministerio')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Programar Semana
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha / Semana</th>
+                                    <th class="py-3.5 px-4">Presidente / Oración</th>
+                                    <th class="py-3.5 px-4">Tesoros de la Biblia</th>
+                                    <th class="py-3.5 px-4">Seamos Mejores Maestros</th>
+                                    <th class="py-3.5 px-4">Nuestra Vida Cristiana</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-vidaministerio" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 6: CONTROL DE ASISTENCIA -->
+            <section id="mod-asistencia" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Control de Asistencia</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Registro presencial y videoconferencia con cálculo automático de totales y promedios.</p>
+                    </div>
+                    <button onclick="openRecordModal('asistencia')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Registrar Asistencia
+                    </button>
+                </div>
+
+                <!-- Tarjetas Resumen Promedios -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 no-print">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs font-semibold uppercase text-slate-500">Promedio Entre Semana</p>
+                        <p id="stat-avg-midweek" class="text-2xl font-bold text-indigo-700 mt-1">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs font-semibold uppercase text-slate-500">Promedio Fin de Semana</p>
+                        <p id="stat-avg-weekend" class="text-2xl font-bold text-emerald-700 mt-1">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs font-semibold uppercase text-slate-500">Total Reuniones Registradas</p>
+                        <p id="stat-total-meetings" class="text-2xl font-bold text-slate-800 mt-1">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Fecha</th>
+                                    <th class="py-3.5 px-4">Reunión</th>
+                                    <th class="py-3.5 px-4">Presencial</th>
+                                    <th class="py-3.5 px-4">Zoom / Virtual</th>
+                                    <th class="py-3.5 px-4">Total Asistencia</th>
+                                    <th class="py-3.5 px-4">Observaciones</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-asistencia" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 7: INVENTARIO DE PUBLICACIONES -->
+            <section id="mod-publicaciones" class="module-section hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Control e Inventario de Publicaciones</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Existencias mensuales, entradas, salidas y stock disponible en el mostrador.</p>
+                    </div>
+                    <button onclick="openRecordModal('publicaciones')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Agregar Publicación
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3.5 px-4">Código / Título</th>
+                                    <th class="py-3.5 px-4">Categoría</th>
+                                    <th class="py-3.5 px-4">Stock Inicial</th>
+                                    <th class="py-3.5 px-4">Entradas</th>
+                                    <th class="py-3.5 px-4">Salidas</th>
+                                    <th class="py-3.5 px-4">Stock Actual</th>
+                                    <th class="py-3.5 px-4 text-right no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-publicaciones" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MÓDULO 8: ADMINISTRACIÓN Y GESTIÓN DE LISTAS -->
+            <section id="mod-admin" class="module-section hidden space-y-8 no-print">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Administración y Listas Compartidas</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">Gestiona los catálogos compartidos del servicio del campo y autoriza a los hermanos de tu congregación.</p>
+                </div>
+
+                <!-- Subsección A: Gestión de Listas del Servicio del Campo (Accesible para hermanos aprobados y admins) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i>
+                                Catálogos Compartidos (Servicio del Campo)
+                            </h3>
+                            <p class="text-xs text-slate-500">Los elementos agregados aquí o al programar una salida aparecen automáticamente para todos los hermanos.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- Lista Conductores -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col">
+                            <h4 class="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>Conductores Asignados</span>
+                                <span id="count-conductores" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0</span>
+                            </h4>
+                            <form onsubmit="addCatalogItem(event, 'conductores')" class="flex gap-1.5 mb-3">
+                                <input type="text" id="input-cat-conductores" required placeholder="Nuevo conductor..."
+                                    class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg">
+                                    Añadir
+                                </button>
+                            </form>
+                            <ul id="list-cat-conductores" class="space-y-1.5 max-h-60 overflow-y-auto text-xs flex-1"></ul>
+                        </div>
+
+                        <!-- Lista Territorios -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col">
+                            <h4 class="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>Territorio(s)</span>
+                                <span id="count-territorios" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0</span>
+                            </h4>
+                            <form onsubmit="addCatalogItem(event, 'territorios')" class="flex gap-1.5 mb-3">
+                                <input type="text" id="input-cat-territorios" required placeholder="Nuevo territorio..."
+                                    class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg">
+                                    Añadir
+                                </button>
+                            </form>
+                            <ul id="list-cat-territorios" class="space-y-1.5 max-h-60 overflow-y-auto text-xs flex-1"></ul>
+                        </div>
+
+                        <!-- Lista Puntos de Encuentro -->
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col">
+                            <h4 class="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>Puntos de Encuentro</span>
+                                <span id="count-puntos" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0</span>
+                            </h4>
+                            <form onsubmit="addCatalogItem(event, 'puntos')" class="flex gap-1.5 mb-3">
+                                <input type="text" id="input-cat-puntos" required placeholder="Nuevo punto..."
+                                    class="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg">
+                                    Añadir
+                                </button>
+                            </form>
+                            <ul id="list-cat-puntos" class="space-y-1.5 max-h-60 overflow-y-auto text-xs flex-1"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subsección B: Control de Usuarios y Autorizaciones (Solo Administradores) -->
+                <div id="admin-users-panel" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="user-check" class="w-5 h-5 text-emerald-600"></i>
+                            Autorización de Usuarios de la Congregación
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Aprueba las solicitudes de registro de los hermanos de tu congregación o asigna permisos de administrador.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                    <th class="py-3 px-4">Hermano</th>
+                                    <th class="py-3 px-4">Correo</th>
+                                    <th class="py-3 px-4">Congregación</th>
+                                    <th class="py-3 px-4">Estado</th>
+                                    <th class="py-3 px-4">Rol</th>
+                                    <th class="py-3 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-users" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL UNIVERSAL PARA AGREGAR / EDITAR REGISTROS -->
+    <div id="record-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-slate-800 text-white flex items-center justify-between">
+                <h3 id="modal-title" class="font-bold text-base">Nuevo Registro</h3>
+                <button onclick="closeRecordModal()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="record-form" onsubmit="saveRecord(event)" class="p-6 overflow-y-auto space-y-4 flex-1 text-sm">
+                <div id="modal-fields" class="space-y-4"></div>
+                <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="closeRecordModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition">
+                        Guardar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="trash-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">¿Confirmar eliminación?</h3>
+            <p class="text-xs text-slate-500 mt-1">Esta acción eliminará el registro de la nube para toda la congregación y no se puede deshacer.</p>
+            <div class="mt-5 flex gap-2 justify-center">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">
+                    Cancelar
+                </button>
+                <button id="confirm-delete-btn" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datalists globales dinámicos para el Servicio del Campo -->
+    <datalist id="dl-conductores"></datalist>
+    <datalist id="dl-territorios"></datalist>
+    <datalist id="dl-puntos"></datalist>
+
+    <!-- LÓGICA DE APLICACIÓN Y FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            collection,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración Firebase proporcionada por el entorno
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'congregacion-app-default';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Estado Global de la Aplicación
+        const state = {
+            authUser: null,
+            userProfile: null,
+            currentModule: 'campo',
+            editingId: null,
+            editingModule: null,
+            records: {
+                campo: [],
+                publica: [],
+                asignaciones: [],
+                discursos: [],
+                vidaministerio: [],
+                asistencia: [],
+                publicaciones: []
+            },
+            catalogs: {
+                conductores: [],
+                territorios: [],
+                puntos: []
+            },
+            congregationUsers: [],
+            unsubscribers: []
+        };
+
+        // Inicializar iconos Lucide
+        lucide.createIcons();
+
+        // Utilidad: Notificaciones Toast
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                warning: 'bg-amber-500 text-slate-950',
+                info: 'bg-slate-800 text-white'
+            };
+            toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center justify-between gap-3 pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // Rutas estrictas de Firestore (Regla 1)
+        const getPublicCollection = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+
+        // Limpiar suscripciones activas
+        function clearListeners() {
+            state.unsubscribers.forEach(unsub => unsub());
+            state.unsubscribers = [];
+        }
+
+        // Autenticación Inicial del Entorno
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    // Si hay token de entorno y no hay sesión email/password activa
+                    if (!auth.currentUser) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    }
+                }
+            } catch (e) {
+                console.warn("Token inicial no aplicable o expirado, esperando inicio de sesión del usuario.");
+            }
+        }
+
+        initAuth();
+
+        // Observador de Estado de Autenticación
+        onAuthStateChanged(auth, async (user) => {
+            clearListeners();
+            const loadingScreen = document.getElementById('loading-screen');
+
+            if (!user || user.isAnonymous) {
+                state.authUser = null;
+                state.userProfile = null;
+                loadingScreen.classList.add('hidden');
+                showView('auth-view');
+                return;
+            }
+
+            state.authUser = user;
+
+            // Escuchar perfil del usuario en tiempo real (para detectar aprobación instantánea)
+            const unsubProfile = onSnapshot(getPublicDoc('users', user.uid), (docSnap) => {
+                loadingScreen.classList.add('hidden');
+                if (!docSnap.exists()) {
+                    showView('auth-view');
+                    return;
+                }
+
+                const profile = { id: docSnap.id, ...docSnap.data() };
+                state.userProfile = profile;
+
+                if (profile.status !== 'approved') {
+                    document.getElementById('pending-user-name').textContent = profile.name;
+                    document.getElementById('pending-cong-info').textContent = `${profile.congregationName} (#${profile.congregationNumber})`;
+                    showView('pending-view');
+                } else {
+                    setupApprovedApp(profile);
+                }
+            }, (error) => {
+                console.error("Error leyendo perfil:", error);
+                loadingScreen.classList.add('hidden');
+                showToast("Error de permisos al verificar perfil.", "error");
+            });
+
+            state.unsubscribers.push(unsubProfile);
+        });
+
+        function showView(viewId) {
+            ['auth-view', 'pending-view', 'app-view'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== viewId);
+            });
+            lucide.createIcons();
+        }
+
+        // Cambiar entre Login y Registro
+        window.switchAuthTab = (tab) => {
+            const isLogin = tab === 'login';
+            document.getElementById('login-form').classList.toggle('hidden', !isLogin);
+            document.getElementById('register-form').classList.toggle('hidden', isLogin);
+
+            document.getElementById('tab-login-btn').className = isLogin
+                ? 'flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition'
+                : 'flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition';
+
+            document.getElementById('tab-register-btn').className = !isLogin
+                ? 'flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition'
+                : 'flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition';
+        };
+
+        // Manejar Inicio de Sesión
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast("Sesión iniciada correctamente", "success");
+            } catch (error) {
+                document.getElementById('loading-screen').classList.add('hidden');
+                showToast("Correo o contraseña incorrectos.", "error");
+            }
+        };
+
+        // Manejar Registro de Nuevo Hermano
+        window.handleRegister = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const congName = document.getElementById('reg-cong-name').value.trim();
+            const congNumber = document.getElementById('reg-cong-number').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            try {
+                document.getElementById('loading-screen').classList.remove('hidden');
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                const uid = cred.user.uid;
+
+                // Verificar si ya existen usuarios en esa congregación para asignar primer administrador
+                let isFirstInCong = true;
+                try {
+                    const { getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const snap = await getDocs(getPublicCollection('users'));
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (String(data.congregationNumber).trim() === congNumber) {
+                            isFirstInCong = false;
+                        }
+                    });
+                } catch (err) {
+                    console.warn("Verificando usuarios existentes:", err);
+                }
+
+                await setDoc(getPublicDoc('users', uid), {
+                    name,
+                    email,
+                    congregationName: congName,
+                    congregationNumber: congNumber,
+                    role: isFirstInCong ? 'admin' : 'user',
+                    status: isFirstInCong ? 'approved' : 'pending',
+                    createdAt: new Date().toISOString()
+                });
+
+                showToast(
+                    isFirstInCong
+                        ? "¡Bienvenido! Eres el primer usuario de la congregación y se te asignó rol de Administrador."
+                        : "Registro enviado. Espera la aprobación de un administrador.",
+                    "success"
+                );
+            } catch (error) {
+                document.getElementById('loading-screen').classList.add('hidden');
+                const msg = error.code === 'auth/email-already-in-use'
+                    ? "Este correo electrónico ya está registrado."
+                    : "Error al registrar: " + error.message;
+                showToast(msg, "error");
+            }
+        };
+
+        // Cerrar Sesión
+        window.handleLogout = async () => {
+            clearListeners();
+            await signOut(auth);
+            showToast("Has cerrado sesión.", "info");
+        };
+
+        // Configurar Interfaz para Usuario Aprobado y Sincronizar Colecciones
+        function setupApprovedApp(profile) {
+            showView('app-view');
+
+            document.getElementById('header-cong-name').textContent = profile.congregationName;
+            document.getElementById('header-cong-number').textContent = `#${profile.congregationNumber}`;
+            document.getElementById('header-user-name').textContent = profile.name;
+            document.getElementById('header-user-role').textContent = profile.role === 'admin' ? 'Administrador' : 'Hermano Aprobado';
+
+            // Configurar encabezado de impresión
+            document.getElementById('print-cong-title').textContent = `CONGREGACIÓN ${profile.congregationName.toUpperCase()} (#${profile.congregationNumber})`;
+            document.getElementById('print-date').textContent = `Impreso el: ${new Date().toLocaleDateString('es-ES')}`;
+
+            // Mostrar panel de aprobación de usuarios solo a admins
+            const adminUsersPanel = document.getElementById('admin-users-panel');
+            if (profile.role === 'admin') {
+                adminUsersPanel.classList.remove('hidden');
+            } else {
+                adminUsersPanel.classList.add('hidden');
+            }
+
+            // Evitar duplicar listeners si el perfil se actualiza
+            if (state.unsubscribers.length > 1) return;
+
+            const congKey = String(profile.congregationNumber).trim();
+
+            // 1. Suscribir a todos los módulos de programación
+            const modules = ['campo', 'publica', 'asignaciones', 'discursos', 'vidaministerio', 'asistencia', 'publicaciones'];
+            modules.forEach(mod => {
+                const unsub = onSnapshot(getPublicCollection(`mod_${mod}`), (snapshot) => {
+                    const items = [];
+                    snapshot.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (String(data.congregationNumber).trim() === congKey) {
+                            items.push({ id: docSnap.id, ...data });
+                        }
+                    });
+                    // Ordenar en memoria (Regla 2)
+                    items.sort((a, b) => (a.fecha || a.titulo || '').localeCompare(b.fecha || b.titulo || ''));
+                    state.records[mod] = items;
+                    renderModuleTable(mod);
+                }, (err) => console.error(`Error en módulo ${mod}:`, err));
+                state.unsubscribers.push(unsub);
+            });
+
+            // 2. Suscribir a Catálogos Compartidos (Conductores, Territorios, Puntos de Encuentro)
+            const unsubCatalogs = onSnapshot(getPublicCollection('catalogs'), (snapshot) => {
+                state.catalogs = { conductores: [], territorios: [], puntos: [] };
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (String(data.congregationNumber).trim() === congKey && state.catalogs[data.type]) {
+                        state.catalogs[data.type].push({ id: docSnap.id, ...data });
+                    }
+                });
+                ['conductores', 'territorios', 'puntos'].forEach(type => {
+                    state.catalogs[type].sort((a, b) => a.value.localeCompare(b.value));
+                });
+                renderCatalogs();
+            }, (err) => console.error("Error en catálogos:", err));
+            state.unsubscribers.push(unsubCatalogs);
+
+            // 3. Suscribir a Usuarios de la Congregación (para administradores)
+            const unsubUsers = onSnapshot(getPublicCollection('users'), (snapshot) => {
+                const users = [];
+                let pendingCount = 0;
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (String(data.congregationNumber).trim() === congKey) {
+                        users.push({ id: docSnap.id, ...data });
+                        if (data.status === 'pending') pendingCount++;
+                    }
+                });
+                users.sort((a, b) => a.name.localeCompare(b.name));
+                state.congregationUsers = users;
+
+                const badge = document.getElementById('pending-badge');
+                if (profile.role === 'admin' && pendingCount > 0) {
+                    badge.textContent = pendingCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+
+                renderUsersTable();
+            }, (err) => console.error("Error en usuarios:", err));
+            state.unsubscribers.push(unsubUsers);
+
+            updatePrintHeaderTitle(state.currentModule);
+        }
+
+        // Navegación entre Módulos
+        const moduleTitles = {
+            campo: 'PROGRAMA DEL SERVICIO DEL CAMPO',
+            publica: 'PROGRAMA DE PREDICACIÓN PÚBLICA (EXHIBIDORES)',
+            asignaciones: 'ASIGNACIONES DE LA CONGREGACIÓN',
+            discursos: 'PROGRAMA DE DISCURSOS PÚBLICOS',
+            vidaministerio: 'REUNIÓN VIDA Y MINISTERIO CRISTIANOS',
+            asistencia: 'REGISTRO DE ASISTENCIA A LAS REUNIONES',
+            publicaciones: 'INVENTARIO DE PUBLICACIONES DE LA CONGREGACIÓN',
+            admin: 'ADMINISTRACIÓN'
+        };
+
+        window.switchModule = (mod) => {
+            state.currentModule = mod;
+            document.querySelectorAll('.module-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`mod-${mod}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const isActive = btn.dataset.tab === mod;
+                btn.className = isActive
+                    ? 'tab-btn active-tab whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-xs flex items-center gap-2 transition'
+                    : 'tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/60 flex items-center gap-2 transition';
+            });
+
+            updatePrintHeaderTitle(mod);
+        };
+
+        function updatePrintHeaderTitle(mod) {
+            document.getElementById('print-module-title').textContent = moduleTitles[mod] || '';
+        }
+
+        // Renderizado de Catálogos y Datalists
+        function renderCatalogs() {
+            ['conductores', 'territorios', 'puntos'].forEach(type => {
+                const listEl = document.getElementById(`list-cat-${type}`);
+                const dlEl = document.getElementById(`dl-${type}`);
+                const countEl = document.getElementById(`count-${type}`);
+
+                const items = state.catalogs[type] || [];
+                countEl.textContent = items.length;
+
+                dlEl.innerHTML = items.map(item => `<option value="${escapeHtml(item.value)}">`).join('');
+
+                if (items.length === 0) {
+                    listEl.innerHTML = `<li class="text-slate-400 italic py-2 text-center">Sin elementos guardados</li>`;
+                } else {
+                    listEl.innerHTML = items.map(item => `
+                        <li class="bg-white px-3 py-2 rounded-lg border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
+                            <span class="font-medium text-slate-700 truncate">${escapeHtml(item.value)}</span>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="editCatalogPrompt('${item.id}', '${type}', '${escapeHtml(item.value)}')" class="p-1 text-slate-400 hover:text-indigo-600 rounded" title="Editar">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="confirmDelete('catalogs', '${item.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded" title="Eliminar">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </li>
+                    `).join('');
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // Agregar elemento manual a Catálogo
+        window.addCatalogItem = async (e, type) => {
+            e.preventDefault();
+            const input = document.getElementById(`input-cat-${type}`);
+            const value = input.value.trim();
+            if (!value) return;
+
+            await ensureCatalogItemExists(type, value);
+            input.value = '';
+            showToast("Elemento guardado en la lista compartida.", "success");
+        };
+
+        // Editar elemento de catálogo mediante modal rápido
+        window.editCatalogPrompt = (id, type, currentVal) => {
+            state.editingId = id;
+            state.editingModule = 'catalog_edit';
+            document.getElementById('modal-title').textContent = 'Modificar Elemento de Lista';
+            document.getElementById('modal-fields').innerHTML = `
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre / Valor</label>
+                    <input type="text" name="value" required value="${currentVal}"
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            `;
+            document.getElementById('record-modal').classList.remove('hidden');
+        };
+
+        window.openCatalogQuickModal = () => {
+            switchModule('admin');
+            showToast("Aquí puedes gestionar Conductores, Territorios y Puntos de Encuentro.", "info");
+        };
+
+        // Sincronización Automática: Si el hermano escribe un conductor, territorio o punto nuevo, guardarlo en la nube
+        async function ensureCatalogItemExists(type, rawValue) {
+            if (!rawValue || !state.userProfile) return;
+            const value = rawValue.trim();
+            if (!value) return;
+
+            const exists = state.catalogs[type].some(
+                item => item.value.toLowerCase() === value.toLowerCase()
+            );
+
+            if (!exists) {
+                try {
+                    await addDoc(getPublicCollection('catalogs'), {
+                        type,
+                        value,
+                        congregationNumber: String(state.userProfile.congregationNumber).trim(),
+                        createdBy: state.userProfile.name,
+                        createdAt: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.error("Error auto-guardando catálogo:", e);
+                }
+            }
+        }
+
+        // Definición de Campos por Módulo para Modal
+        const moduleSchemas = {
+            campo: [
+                { name: 'fecha', label: 'Fecha', type: 'date', required: true },
+                { name: 'hora', label: 'Hora (Ej. 09:00 AM)', type: 'text', required: true, placeholder: '09:00 AM' },
+                { name: 'conductor', label: 'Conductor Asignado (Escribe o selecciona)', type: 'text', list: 'dl-conductores', required: true, placeholder: 'Nombre del hermano' },
+                { name: 'territorios', label: 'Territorio(s) (Escribe o selecciona)', type: 'text', list: 'dl-territorios', required: true, placeholder: 'Ej. Territorio 12 y 14' },
+                { name: 'punto', label: 'Punto de Encuentro (Escribe o selecciona)', type: 'text', list: 'dl-puntos', required: true, placeholder: 'Ej. Salón del Reino / Casa flia. Pérez' },
+                { name: 'notas', label: 'Notas / Grupo', type: 'text', placeholder: 'Ej. Grupo 1 y 2 / Predicación rural' }
+            ],
+            publica: [
+                { name: 'fecha', label: 'Fecha', type: 'date', required: true },
+                { name: 'horario', label: 'Turno / Horario', type: 'text', required: true, placeholder: 'Ej. 09:00 - 11:00' },
+                { name: 'ubicacion', label: 'Ubicación / Punto Público', type: 'text', required: true, placeholder: 'Ej. Plaza Central / Estación' },
+                { name: 'pub1', label: 'Publicador 1', type: 'text', required: true },
+                { name: 'pub2', label: 'Publicador 2', type: 'text', required: true },
+                { name: 'observaciones', label: 'Observaciones', type: 'text' }
+            ],
+            asignaciones: [
+                { name: 'fecha', label: 'Fecha', type: 'date', required: true },
+                { name: 'reunion', label: 'Reunión', type: 'select', options: ['Vida y Ministerio (Entre semana)', 'Reunión Pública (Fin de semana)'], required: true },
+                { name: 'acomodadores', label: 'Acomodadores (Entrada / Auditorio)', type: 'text', required: true },
+                { name: 'audiovideo', label: 'Audio y Video', type: 'text', required: true },
+                { name: 'microfonos', label: 'Micrófonos', type: 'text', required: true },
+                { name: 'lector', label: 'Lector de La Atalaya (si aplica)', type: 'text' },
+                { name: 'oracionFinal', label: 'Oración Final', type: 'text', required: true }
+            ],
+            discursos: [
+                { name: 'fecha', label: 'Fecha (Fin de semana)', type: 'date', required: true },
+                { name: 'orador', label: 'Nombre del Orador', type: 'text', required: true },
+                { name: 'congregacionOrigen', label: 'Congregación de Origen', type: 'text', required: true },
+                { name: 'bosquejo', label: 'N° y Título del Bosquejo', type: 'text', required: true, placeholder: 'Ej. #45 Sigamos el camino a la vida' },
+                { name: 'presidente', label: 'Presidente de la Reunión', type: 'text', required: true },
+                { name: 'hospitalidad', label: 'Hospitalidad', type: 'text' }
+            ],
+            vidaministerio: [
+                { name: 'fecha', label: 'Fecha de la Reunión', type: 'date', required: true },
+                { name: 'presidente', label: 'Presidente y Oración Inicial', type: 'text', required: true },
+                { name: 'tesorosDiscurso', label: 'Tesoros: Discurso (10 min)', type: 'text', required: true },
+                { name: 'perlas', label: 'Tesoros: Busquemos Perlas Escondidas', type: 'text', required: true },
+                { name: 'lecturaBiblia', label: 'Tesoros: Lectura de la Biblia', type: 'text', required: true },
+                { name: 'maestros', label: 'Seamos Mejores Maestros (Asignaciones y Ayudantes)', type: 'textarea', required: true, placeholder: '1. Empiece conversaciones: Hermana A / Hermana B...' },
+                { name: 'vidaCristiana', label: 'Nuestra Vida Cristiana (Intervenciones)', type: 'textarea', required: true },
+                { name: 'estudioBiblico', label: 'Estudio Bíblico de Cong. (Conductor / Lector)', type: 'text', required: true },
+                { name: 'oracionFinal', label: 'Oración Final', type: 'text', required: true }
+            ],
+            asistencia: [
+                { name: 'fecha', label: 'Fecha de la Reunión', type: 'date', required: true },
+                { name: 'tipoReunion', label: 'Tipo de Reunión', type: 'select', options: ['Vida y Ministerio (Entre semana)', 'Reunión Pública (Fin de semana)'], required: true },
+                { name: 'presencial', label: 'Asistencia Presencial', type: 'number', required: true, min: 0 },
+                { name: 'virtual', label: 'Asistencia por Zoom / Virtual', type: 'number', required: true, min: 0 },
+                { name: 'observaciones', label: 'Observaciones', type: 'text', placeholder: 'Ej. Visita Superintendente / Asamblea' }
+            ],
+            publicaciones: [
+                { name: 'titulo', label: 'Código y Nombre de Publicación', type: 'text', required: true, placeholder: 'Ej. nwtsty - Traducción del Nuevo Mundo' },
+                { name: 'categoria', label: 'Categoría', type: 'select', options: ['Biblias', 'Libros', 'Folletos', 'Revistas', 'Tratados', 'Otros'], required: true },
+                { name: 'stockInicial', label: 'Stock Anterior', type: 'number', required: true, min: 0 },
+                { name: 'entradas', label: 'Entradas del Mes', type: 'number', required: true, min: 0 },
+                { name: 'salidas', label: 'Salidas / Distribución', type: 'number', required: true, min: 0 }
+            ]
+        };
+
+        // Abrir Modal para Crear o Editar Registro
+        window.openRecordModal = (mod, recordId = null) => {
+            state.editingModule = mod;
+            state.editingId = recordId;
+
+            const existing = recordId ? state.records[mod].find(r => r.id === recordId) : {};
+            document.getElementById('modal-title').textContent = recordId ? 'Editar Registro' : 'Nuevo Registro';
+
+            const fieldsContainer = document.getElementById('modal-fields');
+            fieldsContainer.innerHTML = moduleSchemas[mod].map(field => {
+                const val = existing[field.name] !== undefined ? escapeHtml(String(existing[field.name])) : '';
+                if (field.type === 'select') {
+                    return `
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">${field.label}</label>
+                            <select name="${field.name}" ${field.required ? 'required' : ''}
+                                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                ${field.options.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                } else if (field.type === 'textarea') {
+                    return `
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">${field.label}</label>
+                            <textarea name="${field.name}" rows="3" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}"
+                                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">${val}</textarea>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">${field.label}</label>
+                            <input type="${field.type}" name="${field.name}" value="${val}"
+                                ${field.list ? `list="${field.list}"` : ''}
+                                ${field.required ? 'required' : ''}
+                                ${field.min !== undefined ? `min="${field.min}"` : ''}
+                                placeholder="${field.placeholder || ''}"
+                                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            document.getElementById('record-modal').classList.remove('hidden');
+        };
+
+        window.closeRecordModal = () => {
+            document.getElementById('record-modal').classList.add('hidden');
+            state.editingId = null;
+            state.editingModule = null;
+        };
+
+        // Guardar Registro en Firestore
+        window.saveRecord = async (e) => {
+            e.preventDefault();
+            if (!state.authUser || !state.userProfile) return;
+
+            const formData = new FormData(e.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value.trim();
+            });
+
+            try {
+                // Caso especial: Edición directa de elemento de catálogo
+                if (state.editingModule === 'catalog_edit') {
+                    await updateDoc(getPublicDoc('catalogs', state.editingId), {
+                        value: data.value,
+                        updatedAt: new Date().toISOString()
+                    });
+                    closeRecordModal();
+                    showToast("Elemento de lista actualizado.", "success");
+                    return;
+                }
+
+                const mod = state.editingModule;
+                data.congregationNumber = String(state.userProfile.congregationNumber).trim();
+                data.updatedBy = state.userProfile.name;
+                data.updatedAt = new Date().toISOString();
+
+                // Si es Servicio del Campo, sincronizar automáticamente los catálogos compartidos
+                if (mod === 'campo') {
+                    await Promise.all([
+                        ensureCatalogItemExists('conductores', data.conductor),
+                        ensureCatalogItemExists('territorios', data.territorios),
+                        ensureCatalogItemExists('puntos', data.punto)
+                    ]);
+                }
+
+                if (state.editingId) {
+                    await updateDoc(getPublicDoc(`mod_${mod}`, state.editingId), data);
+                    showToast("Registro actualizado en la nube.", "success");
+                } else {
+                    data.createdAt = new Date().toISOString();
+                    await addDoc(getPublicCollection(`mod_${mod}`), data);
+                    showToast("Registro agregado y sincronizado.", "success");
+                }
+
+                closeRecordModal();
+            } catch (error) {
+                console.error("Error guardando:", error);
+                showToast("Error al guardar: " + error.message, "error");
+            }
+        };
+
+        // Confirmación de Eliminación
+        window.confirmDelete = (collectionType, docId) => {
+            const modal = document.getElementById('confirm-modal');
+            const btn = document.getElementById('confirm-delete-btn');
+            modal.classList.remove('hidden');
+
+            btn.onclick = async () => {
+                try {
+                    const colPath = collectionType === 'catalogs' ? 'catalogs' : `mod_${collectionType}`;
+                    await deleteDoc(getPublicDoc(colPath, docId));
+                    showToast("Registro eliminado.", "info");
+                } catch (error) {
+                    showToast("Error al eliminar: " + error.message, "error");
+                } finally {
+                    closeConfirmModal();
+                }
+            };
+        };
+
+        window.closeConfirmModal = () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        };
+
+        // Renderizado de Tablas por Módulo
+        function renderModuleTable(mod) {
+            const tbody = document.getElementById(`tbody-${mod}`);
+            const items = state.records[mod] || [];
+
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 text-sm">No hay registros programados aún. Haz clic en el botón superior para agregar el primero.</td></tr>`;
+                if (mod === 'asistencia') updateAttendanceStats([]);
+                return;
+            }
+
+            if (mod === 'campo') {
+                tbody.innerHTML = items.map(r => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">${escapeHtml(r.hora)}</td>
+                        <td class="py-3 px-4 font-medium text-indigo-700">${escapeHtml(r.conductor)}</td>
+                        <td class="py-3 px-4"><span class="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md text-xs font-medium">${escapeHtml(r.territorios)}</span></td>
+                        <td class="py-3 px-4">${escapeHtml(r.punto)}</td>
+                        <td class="py-3 px-4 text-slate-500 text-xs">${escapeHtml(r.notas || '-')}</td>
+                        ${actionButtonsHTML('campo', r.id)}
+                    </tr>
+                `).join('');
+            } else if (mod === 'publica') {
+                tbody.innerHTML = items.map(r => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">${escapeHtml(r.horario)}</td>
+                        <td class="py-3 px-4 font-medium text-indigo-700">${escapeHtml(r.ubicacion)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.pub1)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.pub2)}</td>
+                        <td class="py-3 px-4 text-slate-500 text-xs">${escapeHtml(r.observaciones || '-')}</td>
+                        ${actionButtonsHTML('publica', r.id)}
+                    </tr>
+                `).join('');
+            } else if (mod === 'asignaciones') {
+                tbody.innerHTML = items.map(r => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                        <td class="py-3 px-4 text-xs font-medium text-indigo-700">${escapeHtml(r.reunion)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.acomodadores)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.audiovideo)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.microfonos)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.lector || '-')}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.oracionFinal)}</td>
+                        ${actionButtonsHTML('asignaciones', r.id)}
+                    </tr>
+                `).join('');
+            } else if (mod === 'discursos') {
+                tbody.innerHTML = items.map(r => `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                        <td class="py-3 px-4 font-medium text-indigo-700">${escapeHtml(r.orador)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.congregacionOrigen)}</td>
+                        <td class="py-3 px-4 font-medium">${escapeHtml(r.bosquejo)}</td>
+                        <td class="py-3 px-4">${escapeHtml(r.presidente)}</td>
+                        <td class="py-3 px-4 text-slate-500">${escapeHtml(r.hospitalidad || '-')}</td>
+                        ${actionButtonsHTML('discursos', r.id)}
+                    </tr>
+                `).join('');
+            } else if (mod === 'vidaministerio') {
+                tbody.innerHTML = items.map(r => `
+                    <tr class="hover:bg-slate-50/80 transition align-top">
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                        <td class="py-3 px-4 text-xs space-y-1">
+                            <p><strong>Pres.:</strong> ${escapeHtml(r.presidente)}</p>
+                            <p><strong>Orac. Final:</strong> ${escapeHtml(r.oracionFinal)}</p>
+                        </td>
+                        <td class="py-3 px-4 text-xs space-y-1">
+                            <p><strong>Discurso:</strong> ${escapeHtml(r.tesorosDiscurso)}</p>
+                            <p><strong>Perlas:</strong> ${escapeHtml(r.perlas)}</p>
+                            <p><strong>Lectura:</strong> ${escapeHtml(r.lecturaBiblia)}</p>
+                        </td>
+                        <td class="py-3 px-4 text-xs whitespace-pre-line">${escapeHtml(r.maestros)}</td>
+                        <td class="py-3 px-4 text-xs space-y-1">
+                            <p class="whitespace-pre-line">${escapeHtml(r.vidaCristiana)}</p>
+                            <p class="pt-1 border-t border-slate-100"><strong>Est. Bíblico:</strong> ${escapeHtml(r.estudioBiblico)}</p>
+                        </td>
+                        ${actionButtonsHTML('vidaministerio', r.id)}
+                    </tr>
+                `).join('');
+            } else if (mod === 'asistencia') {
+                updateAttendanceStats(items);
+                tbody.innerHTML = items.map(r => {
+                    const pres = Number(r.presencial || 0);
+                    const virt = Number(r.virtual || 0);
+                    const total = pres + virt;
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${formatDateES(r.fecha)}</td>
+                            <td class="py-3 px-4 text-xs font-medium">${escapeHtml(r.tipoReunion)}</td>
+                            <td class="py-3 px-4">${pres}</td>
+                            <td class="py-3 px-4">${virt}</td>
+                            <td class="py-3 px-4 font-bold text-indigo-700">${total}</td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">${escapeHtml(r.observaciones || '-')}</td>
+                            ${actionButtonsHTML('asistencia', r.id)}
+                        </tr>
+                    `;
+                }).join('');
+            } else if (mod === 'publicaciones') {
+                tbody.innerHTML = items.map(r => {
+                    const ini = Number(r.stockInicial || 0);
+                    const ent = Number(r.entradas || 0);
+                    const sal = Number(r.salidas || 0);
+                    const actual = ini + ent - sal;
+                    const badgeClass = actual <= 5
+                        ? 'bg-rose-100 text-rose-700 border-rose-200'
+                        : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(r.titulo)}</td>
+                            <td class="py-3 px-4 text-xs">${escapeHtml(r.categoria)}</td>
+                            <td class="py-3 px-4">${ini}</td>
+                            <td class="py-3 px-4 text-emerald-600 font-medium">+${ent}</td>
+                            <td class="py-3 px-4 text-amber-600 font-medium">-${sal}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                                    ${actual} unid.
+                                </span>
+                            </td>
+                            ${actionButtonsHTML('publicaciones', r.id)}
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        function actionButtonsHTML(mod, id) {
+            return `
+                <td class="py-3 px-4 text-right whitespace-nowrap no-print">
+                    <button onclick="openRecordModal('${mod}', '${id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Editar">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="confirmDelete('${mod}', '${id}')" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            `;
+        }
+
+        function updateAttendanceStats(items) {
+            let midSum = 0, midCount = 0, wkSum = 0, wkCount = 0;
+            items.forEach(r => {
+                const total = Number(r.presencial || 0) + Number(r.virtual || 0);
+                if ((r.tipoReunion || '').includes('Entre semana')) {
+                    midSum += total;
+                    midCount++;
+                } else {
+                    wkSum += total;
+                    wkCount++;
+                }
+            });
+            document.getElementById('stat-avg-midweek').textContent = midCount ? Math.round(midSum / midCount) : 0;
+            document.getElementById('stat-avg-weekend').textContent = wkCount ? Math.round(wkSum / wkCount) : 0;
+            document.getElementById('stat-total-meetings').textContent = items.length;
+        }
+
+        // Renderizado de Tabla de Usuarios (Administración)
+        function renderUsersTable() {
+            const tbody = document.getElementById('tbody-users');
+            if (!tbody) return;
+
+            tbody.innerHTML = state.congregationUsers.map(u => {
+                const isSelf = u.id === state.authUser?.uid;
+                const statusBadge = u.status === 'approved'
+                    ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Aprobado</span>`
+                    : `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Pendiente</span>`;
+
+                const roleBadge = u.role === 'admin'
+                    ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Administrador</span>`
+                    : `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Hermano</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(u.name)} ${isSelf ? '<span class="text-xs text-indigo-600">(Tú)</span>' : ''}</td>
+                        <td class="py-3 px-4 text-xs text-slate-500">${escapeHtml(u.email)}</td>
+                        <td class="py-3 px-4 text-xs">${escapeHtml(u.congregationName)} (#${escapeHtml(u.congregationNumber)})</td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4">${roleBadge}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                            ${u.status !== 'approved' ? `
+                                <button onclick="updateUserAccess('${u.id}', 'approved', '${u.role}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg shadow-2xs">
+                                    Aprobar
+                                </button>
+                            ` : (!isSelf ? `
+                                <button onclick="updateUserAccess('${u.id}', 'pending', '${u.role}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-medium rounded-lg">
+                                    Suspender
+                                </button>
+                            ` : '')}
+                            ${!isSelf && u.status === 'approved' ? `
+                                <button onclick="updateUserAccess('${u.id}', 'approved', '${u.role === 'admin' ? 'user' : 'admin'}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-medium rounded-lg">
+                                    ${u.role === 'admin' ? 'Quitar Admin' : 'Hacer Admin'}
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.updateUserAccess = async (userId, newStatus, newRole) => {
+            if (state.userProfile?.role !== 'admin') return;
+            try {
+                await updateDoc(getPublicDoc('users', userId), {
+                    status: newStatus,
+                    role: newRole
+                });
+                showToast("Permisos de usuario actualizados.", "success");
+            } catch (e) {
+                showToast("Error al actualizar usuario: " + e.message, "error");
+            }
+        };
+
+        // Helpers de Formato y Seguridad
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatDateES(isoDate) {
+            if (!isoDate) return '-';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            return date.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+        }
+    </script>
+</body>
+</html>

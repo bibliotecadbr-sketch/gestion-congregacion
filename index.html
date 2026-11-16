@@ -29,7 +29,7 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 no-print max-w-sm w-full pointer-events-none"></div>
 
     <!-- Pantalla de Carga -->
-    <div id="loading-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
         <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-lg font-medium">Conectando con la nube...</p>
         <p class="text-xs text-slate-400 mt-1">Sincronizando datos de la congregación</p>
@@ -74,19 +74,19 @@
                     <p class="text-xs text-slate-400"><span id="header-user-name">Usuario</span> • <span id="header-user-role" class="text-emerald-400 font-medium">Rol</span></p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.print()" class="px-3.5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-xl">Imprimir</button>
-                    <button onclick="handleLogout()" class="p-2 bg-slate-800 hover:bg-rose-600 text-slate-300 rounded-xl"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                    <button onclick="window.print()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir</button>
+                    <button onclick="handleLogout()" class="p-2 bg-slate-800 hover:bg-rose-600 text-slate-300 rounded-lg" title="Cerrar Sesión"><i data-lucide="log-out" class="w-4 h-4"></i></button>
                 </div>
             </div>
             <nav class="bg-slate-800 border-t border-slate-700 overflow-x-auto">
                 <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
-                    <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white">Servicio del Campo</button>
-                    <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Predicación Pública</button>
-                    <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Asignaciones</button>
-                    <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Discursos Públicos</button>
-                    <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Vida y Ministerio</button>
-                    <button onclick="switchModule('asistencia')" data-tab="asistencia" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Asistencia</button>
-                    <button onclick="switchModule('admin')" data-tab="admin" id="nav-tab-admin" class="hidden tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Administración</button>
+                    <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i> Servicio del Campo</button>
+                    <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="store" class="w-4 h-4"></i> Predicación Pública</button>
+                    <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="mic" class="w-4 h-4"></i> Asignaciones</button>
+                    <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="presentation" class="w-4 h-4"></i> Discursos Públicos</button>
+                    <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="book-open" class="w-4 h-4"></i> Vida y Ministerio</button>
+                    <button onclick="switchModule('asistencia')" data-tab="asistencia" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> Asistencia</button>
+                    <button onclick="switchModule('admin')" data-tab="admin" id="nav-tab-admin" class="hidden tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="settings" class="w-4 h-4"></i> Administración</button>
                 </div>
             </nav>
         </header>
@@ -94,6 +94,25 @@
         <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
             <div id="module-container"></div>
         </main>
+    </div>
+
+    <!-- MODAL DE REGISTRO / EDICIÓN -->
+    <div id="record-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-lg">Nuevo Registro</h3>
+                <button onclick="closeRecordModal()" class="text-indigo-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="record-form" onsubmit="saveRecord(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="record-id">
+                <input type="hidden" id="record-type">
+                <div id="modal-fields" class="space-y-4"></div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeRecordModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Firebase SDKs -->
@@ -116,7 +135,7 @@
         const db = firebase.firestore();
 
         let currentUser = null, userProfile = null, currentModule = 'campo';
-        let records = [];
+        let records = [], pendingUsers = [];
 
         function showToast(msg, type = 'success') {
             const tc = document.getElementById('toast-container');
@@ -177,6 +196,7 @@
 
                 if (userProfile.rol === 'admin') {
                     document.getElementById('nav-tab-admin').classList.remove('hidden');
+                    loadPendingUsers();
                 }
 
                 initAppData();
@@ -185,6 +205,16 @@
                 showToast("Error al cargar perfil", 'error');
             }
         });
+
+        function loadPendingUsers() {
+            db.collection('usuarios')
+              .where('congregacionId', '==', userProfile.congregacionId)
+              .where('estado', '==', 'pendiente')
+              .onSnapshot(snapshot => {
+                  pendingUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  if (currentModule === 'admin') renderCurrentModule();
+              });
+        }
 
         function initAppData() {
             db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
@@ -200,24 +230,258 @@
             currentModule = mod;
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 if (btn.dataset.tab === mod) {
-                    btn.className = "tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white";
+                    btn.className = "tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5";
                 } else {
-                    btn.className = "tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700";
+                    btn.className = "tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5";
                 }
             });
             renderCurrentModule();
         }
 
+        function openRecordModal(type, id = null) {
+            document.getElementById('record-type').value = type;
+            document.getElementById('record-id').value = id || '';
+            document.getElementById('modal-title').textContent = id ? 'Editar Registro' : 'Nuevo Registro';
+            
+            const fieldsContainer = document.getElementById('modal-fields');
+            fieldsContainer.innerHTML = '';
+
+            let html = '';
+            if (type === 'campo') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Hora</label><input type="text" id="f-hora" placeholder="Ej. 09:00 a.m." required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Conductor</label><input type="text" id="f-conductor" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Territorio(s)</label><input type="text" id="f-territorio" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Punto de Encuentro</label><input type="text" id="f-punto" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            } else if (type === 'publica') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Horario / Turno</label><input type="text" id="f-horario" placeholder="Ej. 10:00 - 11:30" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación</label><input type="text" id="f-ubicacion" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Publicadores</label><input type="text" id="f-publicadores" placeholder="Nombre 1 y Nombre 2" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            } else if (type === 'asistencia') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tipo de Reunión</label><select id="f-reunion" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"><option>Entre Semana</option><option>Fin de Semana</option></select></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Presencial</label><input type="number" id="f-presencial" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Zoom</label><input type="number" id="f-zoom" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Detalles / Título</label><input type="text" id="f-titulo" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm" placeholder="Descripción de la asignación"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Participante(s)</label><input type="text" id="f-participantes" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            }
+
+            fieldsContainer.innerHTML = html;
+            if (id) {
+                const rec = records.find(r => r.id === id);
+                if (rec) {
+                    if (document.getElementById('f-fecha')) document.getElementById('f-fecha').value = rec.fecha || '';
+                    if (document.getElementById('f-hora')) document.getElementById('f-hora').value = rec.hora || '';
+                    if (document.getElementById('f-conductor')) document.getElementById('f-conductor').value = rec.conductor || '';
+                    if (document.getElementById('f-territorio')) document.getElementById('f-territorio').value = rec.territorio || '';
+                    if (document.getElementById('f-punto')) document.getElementById('f-punto').value = rec.punto || '';
+                    if (document.getElementById('f-horario')) document.getElementById('f-horario').value = rec.horario || '';
+                    if (document.getElementById('f-ubicacion')) document.getElementById('f-ubicacion').value = rec.ubicacion || '';
+                    if (document.getElementById('f-publicadores')) document.getElementById('f-publicadores').value = rec.publicadores || '';
+                    if (document.getElementById('f-reunion')) document.getElementById('f-reunion').value = rec.reunion || '';
+                    if (document.getElementById('f-presencial')) document.getElementById('f-presencial').value = rec.presencial || 0;
+                    if (document.getElementById('f-zoom')) document.getElementById('f-zoom').value = rec.zoom || 0;
+                    if (document.getElementById('f-titulo')) document.getElementById('f-titulo').value = rec.titulo || '';
+                    if (document.getElementById('f-participantes')) document.getElementById('f-participantes').value = rec.participantes || '';
+                }
+            }
+
+            document.getElementById('record-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeRecordModal() {
+            document.getElementById('record-modal').classList.add('hidden');
+        }
+
+        async function saveRecord(e) {
+            e.preventDefault();
+            const type = document.getElementById('record-type').value;
+            const id = document.getElementById('record-id').value;
+
+            const data = {
+                congregacionId: userProfile.congregacionId,
+                modulo: type,
+                fecha: document.getElementById('f-fecha')?.value || '',
+                actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (type === 'campo') {
+                data.hora = document.getElementById('f-hora').value;
+                data.conductor = document.getElementById('f-conductor').value;
+                data.territorio = document.getElementById('f-territorio').value;
+                data.punto = document.getElementById('f-punto').value;
+            } else if (type === 'publica') {
+                data.horario = document.getElementById('f-horario').value;
+                data.ubicacion = document.getElementById('f-ubicacion').value;
+                data.publicadores = document.getElementById('f-publicadores').value;
+            } else if (type === 'asistencia') {
+                data.reunion = document.getElementById('f-reunion').value;
+                data.presencial = parseInt(document.getElementById('f-presencial').value) || 0;
+                data.zoom = parseInt(document.getElementById('f-zoom').value) || 0;
+                data.total = data.presencial + data.zoom;
+            } else {
+                data.titulo = document.getElementById('f-titulo').value;
+                data.participantes = document.getElementById('f-participantes').value;
+            }
+
+            try {
+                if (id) {
+                    await db.collection('registros').doc(id).update(data);
+                    showToast("Registro actualizado con éxito");
+                } else {
+                    await db.collection('registros').add(data);
+                    showToast("Registro creado con éxito");
+                }
+                closeRecordModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (confirm("¿Estás seguro de eliminar este registro?")) {
+                try {
+                    await db.collection('registros').doc(id).delete();
+                    showToast("Registro eliminado");
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
+        async function approveUser(userId) {
+            try {
+                await db.collection('usuarios').doc(userId).update({ estado: 'aprobado' });
+                showToast("Usuario aprobado con éxito");
+                loadPendingUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function rejectUser(userId) {
+            if (confirm("¿Rechazar y eliminar esta solicitud?")) {
+                try {
+                    await db.collection('usuarios').doc(userId).delete();
+                    showToast("Solicitud rechazada");
+                    loadPendingUsers();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
         function renderCurrentModule() {
             const container = document.getElementById('module-container');
+            const filteredRecords = records.filter(r => r.modulo === currentModule);
+
+            if (currentModule === 'admin') {
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                            <h2 class="text-lg font-bold text-slate-800 mb-4">Solicitudes de Registro Pendientes</h2>
+                            ${pendingUsers.length === 0 ? '<p class="text-sm text-slate-500">No hay usuarios pendientes de aprobación.</p>' : `
+                                <div class="divide-y divide-slate-100">
+                                    ${pendingUsers.map(u => `
+                                        py-3 flex items-center justify-between gap-4">
+                                            <div>
+                                                <p class="font-semibold text-sm text-slate-800">${u.nombre}</p>
+                                                <p class="text-xs text-slate-500">${u.email} • Congregación: ${u.congregacion} (#${u.numeroCong})</p>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onclick="approveUser('${u.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg">Aprobar</button>
+                                                <button onclick="rejectUser('${u.id}')" class="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg">Rechazar</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            let title = currentModule === 'campo' ? 'Servicio del Campo' :
+                        currentModule === 'publica' ? 'Predicación Pública' :
+                        currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
+                        currentModule === 'discursos' ? 'Discursos Públicos' :
+                        currentModule === 'vidaministerio' ? 'Reunión Vida y Ministerio' : 'Control de Asistencia';
+
             container.innerHTML = `
                 <div class="space-y-5">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-xl font-bold text-slate-800 capitalize">Módulo: ${currentModule}</h2>
-                        <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium">Sincronizado con Firebase</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">${title}</h2>
+                            <p class="text-xs sm:text-sm text-slate-500">Gestión sincronizada en tiempo real.</p>
+                        </div>
+                        <button onclick="openRecordModal('${currentModule}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Agregar Registro
+                        </button>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center text-slate-500">
-                        ${records.length === 0 ? 'No hay registros cargados en este módulo todavía.' : `Registros activos: ${records.length}`}
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                        <th class="py-3 px-4">Fecha</th>
+                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th>' : ''}
+                                        ${currentModule === 'publica' ? '<th class="py-3 px-4">Horario</th><th class="py-3 px-4">Ubicación</th><th class="py-3 px-4">Publicadores</th>' : ''}
+                                        ${currentModule === 'asistencia' ? '<th class="py-3 px-4">Reunión</th><th class="py-3 px-4">Presencial</th><th class="py-3 px-4">Zoom</th><th class="py-3 px-4">Total</th>' : ''}
+                                        ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
+                                        <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 text-sm">
+                                    ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
+                                        filteredRecords.map(r => `
+                                            <tr class="hover:bg-slate-50/50">
+                                                <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                ${currentModule === 'campo' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
+                                                ` : ''}
+                                                ${currentModule === 'publica' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.horario || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.ubicacion || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.publicadores || '-'}</td>
+                                                ` : ''}
+                                                ${currentModule === 'asistencia' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.reunion || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800">${r.presencial || 0}</td>
+                                                    <td class="py-3 px-4 text-slate-800">${r.zoom || 0}</td>
+                                                    <td class="py-3 px-4 font-bold text-indigo-600">${r.total || 0}</td>
+                                                ` : ''}
+                                                ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? `
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.titulo || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.participantes || '-'}</td>
+                                                ` : ''}
+                                                <td class="py-3 px-4 text-right no-print space-x-2">
+                                                    <button onclick="openRecordModal('${currentModule}', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                    <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>`;
             lucide.createIcons();

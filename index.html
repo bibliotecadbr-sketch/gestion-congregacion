@@ -194,7 +194,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
     <script>
-        // CONFIGURACIÓN DE FIREBASE (¡Reemplaza con tus datos reales si es necesario!)
+        // CONFIGURACIÓN DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCczrVnAhSPtKn-iHYbs8pgTR_6rN9xz3E",
             authDomain: "integral-474fd.firebaseapp.com",
@@ -326,14 +326,12 @@
         });
 
         function initAppData() {
-            // Cargar registros de la congregación
             db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
               .onSnapshot(snapshot => {
                   records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                   renderCurrentModule();
               });
 
-            // Cargar catálogos compartidos
             db.collection('catalogos').doc(userProfile.congregacionId)
               .onSnapshot(snapshot => {
                   if (snapshot.exists) {

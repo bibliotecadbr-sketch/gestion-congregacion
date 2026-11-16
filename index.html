@@ -35,13 +35,21 @@
         <p class="text-xs text-slate-400 mt-1">Sincronizando datos de la congregación</p>
     </div>
 
-    <!-- VISTA AUTENTICACIÓN -->
+    <!-- VISTA AUTENTICACIÓN (LOGIN / REGISTRO) -->
     <div id="auth-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-indigo-700 p-6 text-white text-center">
                 <h1 class="text-2xl font-bold">Gestión de Congregación</h1>
                 <p class="text-indigo-200 text-sm mt-1">Plataforma sincronizada</p>
             </div>
+
+            <!-- Pestañas -->
+            <div class="flex border-b border-slate-200">
+                <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition">Iniciar Sesión</button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition">Registrarse</button>
+            </div>
+
+            <!-- Formulario Login -->
             <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Correo Electrónico</label>
@@ -52,6 +60,36 @@
                     <input type="password" id="login-password" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition">Entrar al Sistema</button>
+            </form>
+
+            <!-- Formulario Registro -->
+            <form id="register-form" onsubmit="handleRegister(event)" class="hidden p-6 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre y Apellido</label>
+                    <input type="text" id="reg-name" required placeholder="Ej. Carlos Mendoza" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre Congregación</label>
+                        <input type="text" id="reg-cong-name" required placeholder="Ej. Espanhola" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">N° Cong.</label>
+                        <input type="text" id="reg-cong-number" required placeholder="Ej. 2525" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Correo Electrónico</label>
+                    <input type="email" id="reg-email" required placeholder="correo@ejemplo.com" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Contraseña (mín. 6 caracteres)</label>
+                    <input type="password" id="reg-password" required minlength="6" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                    Tu cuenta quedará en estado <strong>Pendiente de Autorización</strong> hasta que un administrador la apruebe.
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition">Crear Cuenta y Solicitar Acceso</button>
             </form>
         </div>
     </div>
@@ -146,6 +184,20 @@
             setTimeout(() => t.remove(), 3500);
         }
 
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('tab-login-btn').className = "flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition";
+                document.getElementById('tab-register-btn').className = "flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition";
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('tab-register-btn').className = "flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition";
+                document.getElementById('tab-login-btn').className = "flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition";
+            }
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim();
@@ -153,6 +205,28 @@
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
                 showToast("Sesión iniciada");
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const congName = document.getElementById('reg-cong-name').value.trim();
+            const congNum = document.getElementById('reg-cong-number').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-password').value;
+            const congId = congName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g, '-') + '-' + congNum;
+
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                await db.collection('usuarios').doc(cred.user.uid).set({
+                    uid: cred.user.uid, nombre: name, congregacion: congName, numeroCong: congNum,
+                    congregacionId: congId, email: email, estado: 'pendiente', rol: 'usuario',
+                    creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast("Cuenta creada. Solicitud enviada al administrador.");
             } catch (err) {
                 showToast(err.message, 'error');
             }
@@ -397,7 +471,7 @@
                             ${pendingUsers.length === 0 ? '<p class="text-sm text-slate-500">No hay usuarios pendientes de aprobación.</p>' : `
                                 <div class="divide-y divide-slate-100">
                                     ${pendingUsers.map(u => `
-                                        py-3 flex items-center justify-between gap-4">
+                                        <div class="py-3 flex items-center justify-between gap-4">
                                             <div>
                                                 <p class="font-semibold text-sm text-slate-800">${u.nombre}</p>
                                                 <p class="text-xs text-slate-500">${u.email} • Congregación: ${u.congregacion} (#${u.numeroCong})</p>

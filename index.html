@@ -10,20 +10,39 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        @media print {
+            @page { size: landscape; margin: 1.2cm; }
+            body { background-color: #ffffff !important; color: #000000 !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #334155 !important; padding: 6px 8px !important; color: #000000 !important; }
+            th { background-color: #e2e8f0 !important; font-weight: 700 !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center text-white">
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 no-print max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Pantalla de Carga -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
         <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p class="text-lg font-medium">Conectando con la nube...</p>
+        <p class="text-xs text-slate-400 mt-1">Sincronizando datos de la congregación</p>
     </div>
 
-    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-slate-900">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-            <h1 class="text-2xl font-bold text-indigo-700 mb-2">Gestión Congregación</h1>
-            <p class="text-sm text-slate-600 mb-6">Inicia sesión para acceder al sistema</p>
-            <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+    <!-- VISTA AUTENTICACIÓN -->
+    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-indigo-700 p-6 text-white text-center">
+                <h1 class="text-2xl font-bold">Gestión de Congregación</h1>
+                <p class="text-indigo-200 text-sm mt-1">Plataforma sincronizada</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Correo Electrónico</label>
                     <input type="email" id="login-email" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -37,10 +56,44 @@
         </div>
     </div>
 
-    <div id="app-view" class="hidden min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <h1 class="text-3xl font-bold text-slate-800 mb-2">¡Conectado con éxito!</h1>
-        <p class="text-slate-600 mb-4">La autenticación con Firebase se ha realizado correctamente.</p>
-        <button onclick="auth.signOut()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm">Cerrar Sesión</button>
+    <!-- VISTA PENDIENTE -->
+    <div id="pending-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-slate-100">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800">Pendiente de Autorización</h2>
+            <p class="text-sm text-slate-600 mt-2">Tu cuenta está esperando aprobación de un administrador.</p>
+            <button onclick="handleLogout()" class="mt-6 w-full py-2.5 bg-slate-800 text-white text-sm font-medium rounded-xl">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="app-view" class="hidden flex-1 flex flex-col">
+        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div>
+                    <h1 id="header-cong-name" class="font-bold text-lg">Congregación</h1>
+                    <p class="text-xs text-slate-400"><span id="header-user-name">Usuario</span> • <span id="header-user-role" class="text-emerald-400 font-medium">Rol</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="px-3.5 py-2 bg-emerald-600 text-white text-xs font-medium rounded-xl">Imprimir</button>
+                    <button onclick="handleLogout()" class="p-2 bg-slate-800 hover:bg-rose-600 text-slate-300 rounded-xl"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <nav class="bg-slate-800 border-t border-slate-700 overflow-x-auto">
+                <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
+                    <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white">Servicio del Campo</button>
+                    <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Predicación Pública</button>
+                    <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Asignaciones</button>
+                    <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Discursos Públicos</button>
+                    <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Vida y Ministerio</button>
+                    <button onclick="switchModule('asistencia')" data-tab="asistencia" class="tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Asistencia</button>
+                    <button onclick="switchModule('admin')" data-tab="admin" id="nav-tab-admin" class="hidden tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700">Administración</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+            <div id="module-container"></div>
+        </main>
     </div>
 
     <!-- Firebase SDKs -->
@@ -58,30 +111,117 @@
             appId: "1:600156147998:web:c72dfc566c5e89881fb90f"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null, userProfile = null, currentModule = 'campo';
+        let records = [];
+
+        function showToast(msg, type = 'success') {
+            const tc = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `p-3 rounded-xl text-sm font-medium text-white shadow-lg ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            t.textContent = msg;
+            tc.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
 
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-password').value;
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
+                showToast("Sesión iniciada");
             } catch (err) {
-                alert("Error: " + err.message);
+                showToast(err.message, 'error');
             }
         }
 
-        auth.onAuthStateChanged(user => {
-            document.getElementById('loading-screen').classList.add('hidden');
-            if (user) {
-                document.getElementById('auth-view').classList.add('hidden');
-                document.getElementById('app-view').classList.remove('hidden');
-            } else {
+        async function handleLogout() {
+            await auth.signOut();
+            location.reload();
+        }
+
+        auth.onAuthStateChanged(async user => {
+            currentUser = user;
+            if (!user) {
+                document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('pending-view').classList.add('hidden');
                 document.getElementById('app-view').classList.add('hidden');
+                return;
+            }
+
+            try {
+                const snap = await db.collection('usuarios').doc(user.uid).get();
+                if (!snap.exists) { await auth.signOut(); return; }
+                userProfile = snap.data();
+
+                if (userProfile.estado !== 'aprobado') {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('auth-view').classList.add('hidden');
+                    document.getElementById('pending-view').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('pending-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('hidden');
+
+                document.getElementById('header-cong-name').textContent = `${userProfile.congregacion} (#${userProfile.numeroCong})`;
+                document.getElementById('header-user-name').textContent = userProfile.nombre;
+                document.getElementById('header-user-role').textContent = userProfile.rol === 'admin' ? 'Administrador' : 'Publicador';
+
+                if (userProfile.rol === 'admin') {
+                    document.getElementById('nav-tab-admin').classList.remove('hidden');
+                }
+
+                initAppData();
+            } catch (err) {
+                console.error(err);
+                showToast("Error al cargar perfil", 'error');
             }
         });
+
+        function initAppData() {
+            db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
+              .onSnapshot(snapshot => {
+                  records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  renderCurrentModule();
+              });
+            renderCurrentModule();
+            lucide.createIcons();
+        }
+
+        function switchModule(mod) {
+            currentModule = mod;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === mod) {
+                    btn.className = "tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white";
+                } else {
+                    btn.className = "tab-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700";
+                }
+            });
+            renderCurrentModule();
+        }
+
+        function renderCurrentModule() {
+            const container = document.getElementById('module-container');
+            container.innerHTML = `
+                <div class="space-y-5">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-slate-800 capitalize">Módulo: ${currentModule}</h2>
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium">Sincronizado con Firebase</span>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center text-slate-500">
+                        ${records.length === 0 ? 'No hay registros cargados en este módulo todavía.' : `Registros activos: ${records.length}`}
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
     </script>
 </body>
 </html>

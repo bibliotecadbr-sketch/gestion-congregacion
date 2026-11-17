@@ -154,6 +154,37 @@
         </div>
     </div>
 
+    <!-- MODAL ESPECÍFICO PARA PARTICIPANTES DE ASIGNACIONES -->
+    <div id="participant-asig-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="participant-asig-modal-title" class="font-bold text-lg">Gestionar Hermano y Asignaciones</h3>
+                <button onclick="closeParticipantAsigModal()" class="text-indigo-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="participant-asig-form" onsubmit="saveParticipantAsig(event)" class="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+                <input type="hidden" id="pa-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre y Apellido del Hermano</label>
+                    <input type="text" id="pa-nombre" required placeholder="Ej. David Morales" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-2">Áreas / Asignaciones Habilitadas</label>
+                    <div class="grid grid-cols-2 gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200" id="pa-areas-checkboxes">
+                        <!-- Checkboxes generados dinámicamente -->
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Notas / Disponibilidad (Opcional)</label>
+                    <input type="text" id="pa-notas" placeholder="Ej. Disponible entre semana" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeParticipantAsigModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow">Guardar Hermano</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL ESPECÍFICO PARA PARTICIPANTES DE SERVICIO DEL CAMPO -->
     <div id="participant-campo-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
@@ -235,8 +266,19 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        const AREAS_ASIGNACIONES = [
+            "Micrófonos",
+            "Acomodadores",
+            "Estacionamiento",
+            "Audio y Video",
+            "Plataforma",
+            "Limpieza",
+            "Mantenimiento",
+            "Seguridad"
+        ];
+
         let currentUser = null, userProfile = null, currentModule = 'campo';
-        let records = [], participants = [], participantsCampo = [], pendingUsers = [];
+        let records = [], participants = [], participantsCampo = [], participantsAsig = [], pendingUsers = [];
 
         function showToast(msg, type = 'success') {
             const tc = document.getElementById('toast-container');
@@ -375,6 +417,13 @@
                   if (currentModule === 'campo') renderCurrentModule();
               });
 
+            // Sincronizar participantes de asignaciones
+            db.collection('participantes_asignaciones').where('congregacionId', '==', userProfile.congregacionId)
+              .onSnapshot(snapshot => {
+                  participantsAsig = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  if (currentModule === 'asignaciones') renderCurrentModule();
+              });
+
             renderCurrentModule();
             lucide.createIcons();
         }
@@ -389,6 +438,19 @@
                 }
             });
             renderCurrentModule();
+        }
+
+        function updateAsigSuggestions() {
+            const areaSelect = document.getElementById('f-titulo');
+            const hintEl = document.getElementById('asig-sugerencias-hint');
+            if (!areaSelect || !hintEl) return;
+            const selectedArea = areaSelect.value;
+            const habilitados = participantsAsig
+                .filter(p => Array.isArray(p.areas) && p.areas.includes(selectedArea))
+                .map(p => p.nombre);
+            hintEl.textContent = habilitados.length > 0
+                ? `Habilitados para ${selectedArea}: ${habilitados.join(', ')}`
+                : `No hay hermanos marcados para ${selectedArea} aún.`;
         }
 
         function openRecordModal(type, id = null) {
@@ -442,6 +504,22 @@
                         <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Zoom</label><input type="number" id="f-zoom" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     </div>
                 `;
+            } else if (type === 'asignaciones') {
+                const opcionesAreas = AREAS_ASIGNACIONES.map(a => `<option value="${a}">${a}</option>`).join('');
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tipo de Asignación</label>
+                        <select id="f-titulo" onchange="updateAsigSuggestions()" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
+                            ${opcionesAreas}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Hermano(s) Asignado(s)</label>
+                        <input type="text" id="f-participantes" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm mb-1" placeholder="Ej. Hermano Carlos / Hermano Luis">
+                        <p id="asig-sugerencias-hint" class="text-[11px] text-indigo-600 font-medium"></p>
+                    </div>
+                `;
             } else {
                 html = `
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
@@ -477,12 +555,87 @@
                 }
             }
 
+            if (type === 'asignaciones') updateAsigSuggestions();
+
             document.getElementById('record-modal').classList.remove('hidden');
             lucide.createIcons();
         }
 
         function closeRecordModal() {
             document.getElementById('record-modal').classList.add('hidden');
+        }
+
+        // Funciones para Participantes de Asignaciones
+        function openParticipantAsigModal(id = null) {
+            document.getElementById('pa-id').value = id || '';
+            document.getElementById('participant-asig-modal-title').textContent = id ? 'Modificar Hermano y Asignaciones' : 'Agregar Hermano a Asignaciones';
+
+            const checkboxContainer = document.getElementById('pa-areas-checkboxes');
+            let selectedAreas = [];
+
+            if (id) {
+                const part = participantsAsig.find(p => p.id === id);
+                if (part) {
+                    document.getElementById('pa-nombre').value = part.nombre || '';
+                    document.getElementById('pa-notas').value = part.notas || '';
+                    selectedAreas = Array.isArray(part.areas) ? part.areas : [];
+                }
+            } else {
+                document.getElementById('pa-nombre').value = '';
+                document.getElementById('pa-notas').value = '';
+            }
+
+            checkboxContainer.innerHTML = AREAS_ASIGNACIONES.map(area => `
+                <label class="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" name="pa-area" value="${area}" ${selectedAreas.includes(area) ? 'checked' : ''} class="rounded text-indigo-600 focus:ring-indigo-500">
+                    <span>${area}</span>
+                </label>
+            `).join('');
+
+            document.getElementById('participant-asig-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeParticipantAsigModal() {
+            document.getElementById('participant-asig-modal').classList.add('hidden');
+        }
+
+        async function saveParticipantAsig(e) {
+            e.preventDefault();
+            const id = document.getElementById('pa-id').value;
+            const checkedAreas = Array.from(document.querySelectorAll('input[name="pa-area"]:checked')).map(cb => cb.value);
+
+            const data = {
+                congregacionId: userProfile.congregacionId,
+                nombre: document.getElementById('pa-nombre').value.trim(),
+                areas: checkedAreas,
+                notas: document.getElementById('pa-notas').value.trim(),
+                actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (id) {
+                    await db.collection('participantes_asignaciones').doc(id).update(data);
+                    showToast("Hermano actualizado con éxito");
+                } else {
+                    await db.collection('participantes_asignaciones').add(data);
+                    showToast("Hermano agregado con éxito");
+                }
+                closeParticipantAsigModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteParticipantAsig(id) {
+            if (confirm("¿Estás seguro de eliminar este hermano de la lista de asignaciones?")) {
+                try {
+                    await db.collection('participantes_asignaciones').doc(id).delete();
+                    showToast("Hermano eliminado");
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
         }
 
         // Funciones para Participantes de Servicio del Campo
@@ -896,11 +1049,110 @@
                 return;
             }
 
-            // MÓDULO SERVICIO DEL CAMPO (CON SECCIÓN DE PARTICIPANTES, HORARIO Y UBICACIÓN)
+            // MÓDULO ASIGNACIONES (CON SECCIÓN DE PARTICIPANTES Y ÁREAS)
+            if (currentModule === 'asignaciones') {
+                container.innerHTML = `
+                    <div class="space-y-8">
+                        <!-- SECCIÓN 1: PROGRAMACIÓN DE ASIGNACIONES -->
+                        <div class="space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800">Asignaciones de la Congregación</h2>
+                                    <p class="text-xs sm:text-sm text-slate-500">Programación de turnos de servicio en el Salón del Reino.</p>
+                                </div>
+                                <button onclick="openRecordModal('asignaciones')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Asignar Turno
+                                </button>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                                <th class="py-3 px-4">Fecha</th>
+                                                <th class="py-3 px-4">Asignación / Área</th>
+                                                <th class="py-3 px-4">Hermano(s) Asignado(s)</th>
+                                                <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 text-sm">
+                                            ${filteredRecords.length === 0 ? `<tr><td colspan="4" class="text-center py-8 text-slate-400">No hay asignaciones programadas todavía.</td></tr>` : 
+                                                filteredRecords.map(r => `
+                                                    <tr class="hover:bg-slate-50/50">
+                                                        <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                        <td class="py-3 px-4">
+                                                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold">${r.titulo || '-'}</span>
+                                                        </td>
+                                                        <td class="py-3 px-4 text-slate-800 font-semibold">${r.participantes || '-'}</td>
+                                                        <td class="py-3 px-4 text-right no-print space-x-2">
+                                                            <button onclick="openRecordModal('asignaciones', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                            <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                        </td>
+                                                    </tr>
+                                                `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 2: GESTIÓN DE HERMANOS Y PRIVILEGIOS DE ASIGNACIÓN -->
+                        <div class="space-y-4 pt-4 border-t border-slate-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800">Hermanos Participantes y Áreas Asignadas</h3>
+                                    <p class="text-xs sm:text-sm text-slate-500">Listado de hermanos habilitados para Micrófonos, Acomodadores, Audio/Video, Seguridad, etc.</p>
+                                </div>
+                                <button onclick="openParticipantAsigModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                                    <i data-lucide="user-plus" class="w-4 h-4"></i> Agregar Hermano
+                                </button>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                                <th class="py-3 px-4">Hermano</th>
+                                                <th class="py-3 px-4">Asignaciones Habilitadas</th>
+                                                <th class="py-3 px-4">Notas</th>
+                                                <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 text-sm">
+                                            ${participantsAsig.length === 0 ? `<tr><td colspan="4" class="text-center py-8 text-slate-400">No hay hermanos registrados en esta lista aún.</td></tr>` : 
+                                                participantsAsig.map(p => `
+                                                    <tr class="hover:bg-slate-50/50">
+                                                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${p.nombre || '-'}</td>
+                                                        <td class="py-3 px-4">
+                                                            <div class="flex flex-wrap gap-1.5">
+                                                                ${(Array.isArray(p.areas) && p.areas.length > 0) 
+                                                                    ? p.areas.map(a => `<span class="px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-700 rounded-md text-xs font-medium">${a}</span>`).join('')
+                                                                    : '<span class="text-xs text-slate-400">Sin áreas marcadas</span>'}
+                                                            </div>
+                                                        </td>
+                                                        <td class="py-3 px-4 text-slate-600">${p.notas || '-'}</td>
+                                                        <td class="py-3 px-4 text-right no-print space-x-2 whitespace-nowrap">
+                                                            <button onclick="openParticipantAsigModal('${p.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg" title="Modificar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                            <button onclick="deleteParticipantAsig('${p.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                        </td>
+                                                    </tr>
+                                                `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            // MÓDULO SERVICIO DEL CAMPO
             if (currentModule === 'campo') {
                 container.innerHTML = `
                     <div class="space-y-8">
-                        <!-- SECCIÓN 1: SALIDAS PROGRAMADAS -->
                         <div class="space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
                                 <div>
@@ -948,7 +1200,6 @@
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 2: LISTA DE HERMANOS / PARTICIPANTES DE CAMPO -->
                         <div class="space-y-4 pt-4 border-t border-slate-200">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
                                 <div>
@@ -1089,7 +1340,6 @@
             }
 
             let title = currentModule === 'publicaciones' ? 'Informe Mensual de Publicaciones' :
-                        currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
                         currentModule === 'discursos' ? 'Discursos Públicos' : 'Reunión Vida y Ministerio';
 
             container.innerHTML = `
@@ -1110,7 +1360,7 @@
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
                                         ${currentModule === 'publicaciones' ? '<th class="py-3 px-4">Mes</th><th class="py-3 px-4">Publicador</th><th class="py-3 px-4">Tratados</th><th class="py-3 px-4">Revistas</th><th class="py-3 px-4">Folletos</th><th class="py-3 px-4">Libros</th>' : '<th class="py-3 px-4">Fecha</th>'}
-                                        ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
+                                        ${['discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
                                         <th class="py-3 px-4 text-right no-print">Acciones</th>
                                     </tr>
                                 </thead>
@@ -1126,7 +1376,7 @@
                                                     <td class="py-3 px-4 text-slate-600">${r.folletos || 0}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.libros || 0}</td>
                                                 ` : `<td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>`}
-                                                ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? `
+                                                ${['discursos', 'vidaministerio'].includes(currentModule) ? `
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.titulo || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.participantes || '-'}</td>
                                                 ` : ''}

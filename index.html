@@ -135,7 +135,7 @@
         </main>
     </div>
 
-    <!-- MODAL DE REGISTRO / EDICIÓN GENERAL -->
+    <!-- MODAL GENERAL DE REGISTROS -->
     <div id="record-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
             <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
@@ -149,6 +149,39 @@
                 <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                     <button type="button" onclick="closeRecordModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">Cancelar</button>
                     <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ESPECÍFICO PARA PARTICIPANTES DE SERVICIO DEL CAMPO -->
+    <div id="participant-campo-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="participant-campo-modal-title" class="font-bold text-lg">Gestionar Participante / Grupo</h3>
+                <button onclick="closeParticipantCampoModal()" class="text-indigo-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="participant-campo-form" onsubmit="saveParticipantCampo(event)" class="p-6 space-y-4">
+                <input type="hidden" id="pc-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre / Conductor / Publicadores</label>
+                    <input type="text" id="pc-nombre" required placeholder="Ej. Hermano Juan Pérez o Grupo 1" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Horario Habitual</label>
+                    <input type="text" id="pc-horario" required placeholder="Ej. 09:00 a.m." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación / Punto de Encuentro</label>
+                    <input type="text" id="pc-ubicacion" required placeholder="Ej. Salón del Reino / Parque Central" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Días / Notas</label>
+                    <input type="text" id="pc-notas" placeholder="Ej. Martes y Sábados" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeParticipantCampoModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow">Guardar Participante</button>
                 </div>
             </form>
         </div>
@@ -203,7 +236,7 @@
         const db = firebase.firestore();
 
         let currentUser = null, userProfile = null, currentModule = 'campo';
-        let records = [], participants = [], pendingUsers = [];
+        let records = [], participants = [], participantsCampo = [], pendingUsers = [];
 
         function showToast(msg, type = 'success') {
             const tc = document.getElementById('toast-container');
@@ -335,6 +368,13 @@
                   if (currentModule === 'publica') renderCurrentModule();
               });
 
+            // Sincronizar participantes de servicio del campo
+            db.collection('participantes_campo').where('congregacionId', '==', userProfile.congregacionId)
+              .onSnapshot(snapshot => {
+                  participantsCampo = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  if (currentModule === 'campo') renderCurrentModule();
+              });
+
             renderCurrentModule();
             lucide.createIcons();
         }
@@ -370,15 +410,14 @@
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Concluido (Fecha)</label><input type="date" id="f-concluido" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                 `;
             } else if (type === 'publica') {
-                const optionsHtml = participants.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join('');
                 html = `
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Horario / Turno</label><input type="text" id="f-horario" placeholder="Ej. 10:00 - 11:30" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación</label><input type="text" id="f-ubicacion" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div>
                         <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Publicadores Asignados</label>
-                        <input type="text" id="f-publicadores" placeholder="Selecciona o escribe los nombres" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm mb-1">
-                        <p class="text-[11px] text-slate-500">Participantes disponibles: ${participants.map(p => p.nombre).join(', ') || 'Ninguno registrado aún'}</p>
+                        <input type="text" id="f-publicadores" placeholder="Nombres de los hermanos" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm mb-1">
+                        <p class="text-[11px] text-slate-500">Disponibles: ${participants.map(p => p.nombre).join(', ') || 'Ninguno registrado'}</p>
                     </div>
                 `;
             } else if (type === 'publicaciones') {
@@ -446,7 +485,72 @@
             document.getElementById('record-modal').classList.add('hidden');
         }
 
-        // Funciones específicas para gestionar participantes de Predicación Pública
+        // Funciones para Participantes de Servicio del Campo
+        function openParticipantCampoModal(id = null) {
+            document.getElementById('pc-id').value = id || '';
+            document.getElementById('participant-campo-modal-title').textContent = id ? 'Modificar Participante' : 'Agregar Participante / Grupo';
+            
+            if (id) {
+                const part = participantsCampo.find(p => p.id === id);
+                if (part) {
+                    document.getElementById('pc-nombre').value = part.nombre || '';
+                    document.getElementById('pc-horario').value = part.horario || '';
+                    document.getElementById('pc-ubicacion').value = part.ubicacion || '';
+                    document.getElementById('pc-notas').value = part.notas || '';
+                }
+            } else {
+                document.getElementById('pc-nombre').value = '';
+                document.getElementById('pc-horario').value = '';
+                document.getElementById('pc-ubicacion').value = '';
+                document.getElementById('pc-notas').value = '';
+            }
+
+            document.getElementById('participant-campo-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeParticipantCampoModal() {
+            document.getElementById('participant-campo-modal').classList.add('hidden');
+        }
+
+        async function saveParticipantCampo(e) {
+            e.preventDefault();
+            const id = document.getElementById('pc-id').value;
+            const data = {
+                congregacionId: userProfile.congregacionId,
+                nombre: document.getElementById('pc-nombre').value.trim(),
+                horario: document.getElementById('pc-horario').value.trim(),
+                ubicacion: document.getElementById('pc-ubicacion').value.trim(),
+                notas: document.getElementById('pc-notas').value.trim(),
+                actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (id) {
+                    await db.collection('participantes_campo').doc(id).update(data);
+                    showToast("Participante actualizado con éxito");
+                } else {
+                    await db.collection('participantes_campo').add(data);
+                    showToast("Participante agregado con éxito");
+                }
+                closeParticipantCampoModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteParticipantCampo(id) {
+            if (confirm("¿Estás seguro de eliminar este participante de la lista?")) {
+                try {
+                    await db.collection('participantes_campo').doc(id).delete();
+                    showToast("Participante eliminado");
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
+        // Funciones para Participantes de Predicación Pública
         function openParticipantModal(id = null) {
             document.getElementById('participant-id').value = id || '';
             document.getElementById('participant-modal-title').textContent = id ? 'Modificar Participante' : 'Agregar Participante';
@@ -792,11 +896,110 @@
                 return;
             }
 
-            // MÓDULO PREDICACIÓN PÚBLICA (CON SECCIÓN DE PARTICIPANTES)
+            // MÓDULO SERVICIO DEL CAMPO (CON SECCIÓN DE PARTICIPANTES, HORARIO Y UBICACIÓN)
+            if (currentModule === 'campo') {
+                container.innerHTML = `
+                    <div class="space-y-8">
+                        <!-- SECCIÓN 1: SALIDAS PROGRAMADAS -->
+                        <div class="space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800">Servicio del Campo - Programación</h2>
+                                    <p class="text-xs sm:text-sm text-slate-500">Gestión de salidas al campo y territorios.</p>
+                                </div>
+                                <button onclick="openRecordModal('campo')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Agregar Salida
+                                </button>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                                <th class="py-3 px-4">Fecha</th>
+                                                <th class="py-3 px-4">Hora</th>
+                                                <th class="py-3 px-4">Conductor</th>
+                                                <th class="py-3 px-4">Territorio</th>
+                                                <th class="py-3 px-4">Punto</th>
+                                                <th class="py-3 px-4">Concluido</th>
+                                                <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 text-sm">
+                                            ${filteredRecords.length === 0 ? `<tr><td colspan="7" class="text-center py-8 text-slate-400">No hay registros de servicio de campo.</td></tr>` : 
+                                                filteredRecords.map(r => `
+                                                    <tr class="hover:bg-slate-50/50">
+                                                        <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
+                                                        <td class="py-3 px-4 text-emerald-600 font-medium">${r.concluido || '-'}</td>
+                                                        <td class="py-3 px-4 text-right no-print space-x-2">
+                                                            <button onclick="openRecordModal('campo', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                            <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                        </td>
+                                                    </tr>
+                                                `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 2: LISTA DE HERMANOS / PARTICIPANTES DE CAMPO -->
+                        <div class="space-y-4 pt-4 border-t border-slate-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800">Gestión de Hermanos y Grupos de Campo</h3>
+                                    <p class="text-xs sm:text-sm text-slate-500">Listado de participantes, horarios y ubicaciones habituales.</p>
+                                </div>
+                                <button onclick="openParticipantCampoModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                                    <i data-lucide="user-plus" class="w-4 h-4"></i> Agregar Participante / Grupo
+                                </button>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                                <th class="py-3 px-4">Nombre / Conductor / Grupo</th>
+                                                <th class="py-3 px-4">Horario</th>
+                                                <th class="py-3 px-4">Ubicación / Punto</th>
+                                                <th class="py-3 px-4">Días / Notas</th>
+                                                <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 text-sm">
+                                            ${participantsCampo.length === 0 ? `<tr><td colspan="5" class="text-center py-8 text-slate-400">No hay participantes de campo registrados todavía.</td></tr>` : 
+                                                participantsCampo.map(p => `
+                                                    <tr class="hover:bg-slate-50/50">
+                                                        <td class="py-3 px-4 font-semibold text-slate-800">${p.nombre || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-600">${p.horario || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-800 font-semibold">${p.ubicacion || '-'}</td>
+                                                        <td class="py-3 px-4 text-slate-600">${p.notas || '-'}</td>
+                                                        <td class="py-3 px-4 text-right no-print space-x-2">
+                                                            <button onclick="openParticipantCampoModal('${p.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg" title="Modificar"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                            <button onclick="deleteParticipantCampo('${p.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg" title="Eliminar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                        </td>
+                                                    </tr>
+                                                `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            // MÓDULO PREDICACIÓN PÚBLICA
             if (currentModule === 'publica') {
                 container.innerHTML = `
                     <div class="space-y-8">
-                        <!-- SECCIÓN 1: TURNOS Y ASIGNACIONES -->
                         <div class="space-y-4">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
                                 <div>
@@ -840,7 +1043,6 @@
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 2: LISTA DE HERMANOS / PARTICIPANTES DISPONIBLES -->
                         <div class="space-y-4 pt-4 border-t border-slate-200">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
                                 <div>
@@ -864,7 +1066,7 @@
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-200 text-sm">
-                                            ${participants.length === 0 ? `<tr><td colspan="4" class="text-center py-8 text-slate-400">No hay participantes registrados todavía. Agrega hermanos a la lista.</td></tr>` : 
+                                            ${participants.length === 0 ? `<tr><td colspan="4" class="text-center py-8 text-slate-400">No hay participantes registrados todavía.</td></tr>` : 
                                                 participants.map(p => `
                                                     <tr class="hover:bg-slate-50/50">
                                                         <td class="py-3 px-4 font-semibold text-slate-800">${p.nombre || '-'}</td>
@@ -886,8 +1088,7 @@
                 return;
             }
 
-            let title = currentModule === 'campo' ? 'Servicio del Campo' :
-                        currentModule === 'publicaciones' ? 'Informe Mensual de Publicaciones' :
+            let title = currentModule === 'publicaciones' ? 'Informe Mensual de Publicaciones' :
                         currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
                         currentModule === 'discursos' ? 'Discursos Públicos' : 'Reunión Vida y Ministerio';
 
@@ -909,7 +1110,6 @@
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
                                         ${currentModule === 'publicaciones' ? '<th class="py-3 px-4">Mes</th><th class="py-3 px-4">Publicador</th><th class="py-3 px-4">Tratados</th><th class="py-3 px-4">Revistas</th><th class="py-3 px-4">Folletos</th><th class="py-3 px-4">Libros</th>' : '<th class="py-3 px-4">Fecha</th>'}
-                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th><th class="py-3 px-4">Concluido</th>' : ''}
                                         ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
                                         <th class="py-3 px-4 text-right no-print">Acciones</th>
                                     </tr>
@@ -926,13 +1126,6 @@
                                                     <td class="py-3 px-4 text-slate-600">${r.folletos || 0}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.libros || 0}</td>
                                                 ` : `<td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>`}
-                                                ${currentModule === 'campo' ? `
-                                                    <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
-                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
-                                                    <td class="py-3 px-4 text-emerald-600 font-medium">${r.concluido || '-'}</td>
-                                                ` : ''}
                                                 ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? `
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.titulo || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.participantes || '-'}</td>

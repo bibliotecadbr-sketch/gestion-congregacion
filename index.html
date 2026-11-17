@@ -462,7 +462,6 @@
             }
         }
 
-        // Función para calcular las filas del formulario S-88-S a partir de los registros reales
         function calculateS88Data(reunionTipo) {
             const mesesOrden = [
                 { id: 9, nombre: 'Sept.' }, { id: 10, nombre: 'Oct.' }, { id: 11, nombre: 'Nov.' }, { id: 12, nombre: 'Dic.' },
@@ -476,7 +475,6 @@
             let totalAsistenciaAnual = 0;
 
             const filas = mesesOrden.map(m => {
-                // Filtrar registros por mes (considerando el año en curso o fecha YYYY-MM-DD)
                 const delMes = asistenciaRecords.filter(r => {
                     if (!r.fecha) return false;
                     const d = new Date(r.fecha + 'T00:00:00');
@@ -534,7 +532,7 @@
                 return;
             }
 
-            // MÓDULO ASISTENCIA (Formulario Oficial S-88-S integrado)
+            // MÓDULO ASISTENCIA: HISTORIAL DETALLADO PRIMERO, LUEGO TABLAS S-88-S
             if (currentModule === 'asistencia') {
                 const entreSemana = calculateS88Data('Entre Semana');
                 const finSemana = calculateS88Data('Fin de Semana');
@@ -544,18 +542,53 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
                             <div>
                                 <h2 class="text-xl font-bold text-slate-800">Registro de Asistencia a las Reuniones (S-88-S)</h2>
-                                <p class="text-xs sm:text-sm text-slate-500">Formulario oficial sincronizado con los registros semanales.</p>
+                                <p class="text-xs sm:text-sm text-slate-500">Historial detallado y formulario oficial sincronizado.</p>
                             </div>
                             <button onclick="openRecordModal('asistencia')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
                                 <i data-lucide="plus" class="w-4 h-4"></i> Registrar Asistencia de Reunión
                             </button>
                         </div>
 
-                        <!-- TABLA 1: REUNIÓN DE ENTRE SEMANA -->
+                        <!-- 1. HISTORIAL DETALLADO DE ASISTENCIAS INGRESADAS -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                            <h3 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-indigo-600"></i> Historial detallado de asistencias ingresadas</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-600">
+                                            <th class="py-2.5 px-3">Fecha</th>
+                                            <th class="py-2.5 px-3">Tipo de Reunión</th>
+                                            <th class="py-2.5 px-3">Presencial</th>
+                                            <th class="py-2.5 px-3">Zoom</th>
+                                            <th class="py-2.5 px-3">Total</th>
+                                            <th class="py-2.5 px-3 text-right no-print">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-6 text-slate-400">No hay registros de asistencia guardados.</td></tr>` :
+                                            filteredRecords.map(r => `
+                                                <tr class="hover:bg-slate-50">
+                                                    <td class="py-2.5 px-3 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                    <td class="py-2.5 px-3 text-slate-600">${r.reunion || '-'}</td>
+                                                    <td class="py-2.5 px-3 text-slate-800">${r.presencial || 0}</td>
+                                                    <td class="py-2.5 px-3 text-slate-800">${r.zoom || 0}</td>
+                                                    <td class="py-2.5 px-3 font-bold text-indigo-600">${r.total || 0}</td>
+                                                    <td class="py-2.5 px-3 text-right no-print space-x-2">
+                                                        <button onclick="openRecordModal('asistencia', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                        <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 2. TABLA S-88-S: REUNIÓN DE ENTRE SEMANA -->
                         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
                             <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i> Reunión de entre semana</h3>
-                                <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium">Formulario S-88-S</span>
+                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i> Reunión de entre semana (Formulario S-88-S)[cite: 2]</h3>
+                                <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium">Control Mensual / Anual</span>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse text-sm">
@@ -587,11 +620,11 @@
                             </div>
                         </div>
 
-                        <!-- TABLA 2: REUNIÓN DEL FIN DE SEMANA -->
+                        <!-- 3. TABLA S-88-S: REUNIÓN DEL FIN DE SEMANA -->
                         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
                             <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i> Reunión del fin de semana</h3>
-                                <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium">Formulario S-88-S</span>
+                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i> Reunión del fin de semana (Formulario S-88-S)[cite: 3]</h3>
+                                <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium">Control Mensual / Anual</span>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse text-sm">
@@ -618,41 +651,6 @@
                                             <td class="py-2.5 px-3 border text-center">${finSemana.totalAsistenciaAnual}</td>
                                             <td class="py-2.5 px-3 border text-center text-emerald-700">${finSemana.promedioAnual} *</td>
                                         </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- LISTADO DETALLADO DE REUNIONES REGISTRADAS -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                            <h3 class="font-bold text-slate-800 text-base mb-3">Historial detallado de asistencias ingresadas</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse text-sm">
-                                    <thead>
-                                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-600">
-                                            <th class="py-2.5 px-3">Fecha</th>
-                                            <th class="py-2.5 px-3">Tipo de Reunión</th>
-                                            <th class="py-2.5 px-3">Presencial</th>
-                                            <th class="py-2.5 px-3">Zoom</th>
-                                            <th class="py-2.5 px-3">Total</th>
-                                            <th class="py-2.5 px-3 text-right no-print">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-200">
-                                        ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-6 text-slate-400">No hay registros de asistencia guardados.</td></tr>` :
-                                            filteredRecords.map(r => `
-                                                <tr class="hover:bg-slate-50">
-                                                    <td class="py-2.5 px-3 font-medium text-slate-800">${r.fecha || '-'}</td>
-                                                    <td class="py-2.5 px-3 text-slate-600">${r.reunion || '-'}</td>
-                                                    <td class="py-2.5 px-3 text-slate-800">${r.presencial || 0}</td>
-                                                    <td class="py-2.5 px-3 text-slate-800">${r.zoom || 0}</td>
-                                                    <td class="py-2.5 px-3 font-bold text-indigo-600">${r.total || 0}</td>
-                                                    <td class="py-2.5 px-3 text-right no-print space-x-2">
-                                                        <button onclick="openRecordModal('asistencia', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                                                        <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                                    </td>
-                                                </tr>
-                                            `).join('')}
                                     </tbody>
                                 </table>
                             </div>

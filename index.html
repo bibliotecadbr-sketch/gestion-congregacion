@@ -328,6 +328,7 @@
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Conductor</label><input type="text" id="f-conductor" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Territorio(s)</label><input type="text" id="f-territorio" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Punto de Encuentro</label><input type="text" id="f-punto" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Concluido (Fecha)</label><input type="date" id="f-concluido" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                 `;
             } else if (type === 'publica') {
                 html = `
@@ -362,6 +363,7 @@
                     if (document.getElementById('f-conductor')) document.getElementById('f-conductor').value = rec.conductor || '';
                     if (document.getElementById('f-territorio')) document.getElementById('f-territorio').value = rec.territorio || '';
                     if (document.getElementById('f-punto')) document.getElementById('f-punto').value = rec.punto || '';
+                    if (document.getElementById('f-concluido')) document.getElementById('f-concluido').value = rec.concluido || '';
                     if (document.getElementById('f-horario')) document.getElementById('f-horario').value = rec.horario || '';
                     if (document.getElementById('f-ubicacion')) document.getElementById('f-ubicacion').value = rec.ubicacion || '';
                     if (document.getElementById('f-publicadores')) document.getElementById('f-publicadores').value = rec.publicadores || '';
@@ -398,6 +400,7 @@
                 data.conductor = document.getElementById('f-conductor').value;
                 data.territorio = document.getElementById('f-territorio').value;
                 data.punto = document.getElementById('f-punto').value;
+                data.concluido = document.getElementById('f-concluido').value || '';
             } else if (type === 'publica') {
                 data.horario = document.getElementById('f-horario').value;
                 data.ubicacion = document.getElementById('f-ubicacion').value;
@@ -514,7 +517,7 @@
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
                                         <th class="py-3 px-4">Fecha</th>
-                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th>' : ''}
+                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th><th class="py-3 px-4">Concluido</th>' : ''}
                                         ${currentModule === 'publica' ? '<th class="py-3 px-4">Horario</th><th class="py-3 px-4">Ubicación</th><th class="py-3 px-4">Publicadores</th>' : ''}
                                         ${currentModule === 'asistencia' ? '<th class="py-3 px-4">Reunión</th><th class="py-3 px-4">Presencial</th><th class="py-3 px-4">Zoom</th><th class="py-3 px-4">Total</th>' : ''}
                                         ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
@@ -522,7 +525,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 text-sm">
-                                    ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
+                                    ${filteredRecords.length === 0 ? `<tr><td colspan="7" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
                                         filteredRecords.map(r => `
                                             <tr class="hover:bg-slate-50/50">
                                                 <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
@@ -531,6 +534,7 @@
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
+                                                    <td class="py-3 px-4 text-emerald-600 font-medium">${r.concluido || '-'}</td>
                                                 ` : ''}
                                                 ${currentModule === 'publica' ? `
                                                     <td class="py-3 px-4 text-slate-600">${r.horario || '-'}</td>

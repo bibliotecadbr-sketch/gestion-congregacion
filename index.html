@@ -177,12 +177,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Administrador general: se identifica por UID, no por el campo editable "rol".
-        const ADMIN_GENERAL_UID = 'iiwvSfU540dRN4F0BiYxSLxKf0v1';
-        function esAdministradorGeneral() {
-            return !!currentUser && currentUser.uid === ADMIN_GENERAL_UID;
-        }
-
         let currentUser = null, userProfile = null, currentModule = 'campo';
         let records = [], pendingUsers = [];
 
@@ -277,10 +271,9 @@
 
                 document.getElementById('header-cong-name').textContent = `${userProfile.congregacion} (#${userProfile.numeroCong})`;
                 document.getElementById('header-user-name').textContent = userProfile.nombre;
-                const esAdminGeneral = esAdministradorGeneral();
-                document.getElementById('header-user-role').textContent = esAdminGeneral ? 'Administrador general' : 'Publicador';
+                document.getElementById('header-user-role').textContent = userProfile.rol === 'admin' ? 'Administrador' : 'Publicador';
 
-                if (esAdminGeneral) {
+                if (userProfile.rol === 'admin') {
                     document.getElementById('nav-tab-admin').classList.remove('hidden');
                     loadPendingUsers();
                 }
@@ -293,36 +286,247 @@
         });
 
         function loadPendingUsers() {
-            if (!esAdministradorGeneral()) return;
-
-            // El administrador general consulta solicitudes de todas las congregaciones.
             db.collection('usuarios')
+              .where('congregacionId', '==', userProfile.congregacionId)
               .where('estado', '==', 'pendiente')
               .onSnapshot(snapshot => {
                   pendingUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                   if (currentModule === 'admin') renderCurrentModule();
-              }, err => {
-                  console.error('Error al cargar solicitudes pendientes:', err);
-                  showToast('No se pudieron cargar las solicitudes: ' + err.message, 'error');
               });
         }
 
         function initAppData() {
-            // El administrador general consulta todos los registros; los demás,
-            // únicamente los que pertenecen a su congregación.
-            const consultaRegistros = esAdministradorGeneral()
-                ? db.collection('registros')
-                : db.collection('registros').where('congregacionId', '==', userProfile.congregacionId);
-
-            consultaRegistros.onSnapshot(snapshot => {
+            db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
+              .onSnapshot(snapshot => {
                   records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                   renderCurrentModule();
-              }, err => {
-                  console.error('Error al cargar registros:', err);
-                  showToast('No se pudieron cargar los registros: ' + err.message, 'error');
               });
             renderCurrentModule();
             lucide.createIcons();
+        }
+
+
+        // ============================================================
+        // PUENTE FIRESTORE PARA LOS CINCO MÓDULOS EMBEBIDOS
+        // Cada módulo conserva su interfaz y su código interno.
+        // Su almacenamiento local se replica como estado JSON en Firestore.
+        // ============================================================
+        const MODULOS_EMBEBIDOS = {
+            servicio: "servicio-campo",
+            predicacion: "predicacion-publica",
+            inventario: "inventario-publicaciones",
+            asignaciones: "asignaciones-congregacion",
+            discursos: "discursos-publicos"
+        };
+        const escuchasModulos = {};
+        const framesModulos = {};
+        const PREFIJOS_CLAVES_MODULO = {
+            servicio: ["servicioDelCampo_"],
+            predicacion: ["predicacionPublica_", "registroPublicadores_"],
+            inventario: ["gestionCong_inventario_"],
+            asignaciones: ["asignaciones_congregacion_"],
+            discursos: ["gestionCong_discursos_publicos_"]
+        };
+
+        function idDocumentoModulo(modulo) {
+            const cid = String(userProfile?.congregacionId || "");
+            if (!cid || !MODULOS_EMBEBIDOS[modulo]) {
+                throw new Error("No se pudo identificar la congregación o el módulo.");
+            }
+            return `${cid}__modulo__${MODULOS_EMBEBIDOS[modulo]}`;
+        }
+
+        function mostrarErrorModulo(error, modulo) {
+            console.error("Firebase módulo " + modulo, error);
+            showToast("No se pudo sincronizar " + modulo + ": " +
+                (error?.message || "error de conexión/permisos"), "error");
+        }
+
+        async function iniciarPuenteModulo(frame, modulo) {
+            if (!frame || !MODULOS_EMBEBIDOS[modulo] || !currentUser ||
+                !userProfile || userProfile.estado !== "aprobado") return;
+
+            framesModulos[modulo] = frame;
+            const docRef = db.collection("registros").doc(idDocumentoModulo(modulo));
+
+            try {
+                const cloud = await docRef.get();
+                if (!cloud.exists) {
+                    // Primera conexión: copiar el almacenamiento local del módulo.
+                    frame.contentWindow.postMessage({
+                        tipo: "GIC_SOLICITAR_ESTADO",
+                        modulo
+                    }, "*");
+                } else {
+                    const data = cloud.data();
+                    if (data.congregacionId !== userProfile.congregacionId ||
+                        data.modulo !== MODULOS_EMBEBIDOS[modulo]) {
+                        throw new Error("El documento remoto no corresponde a esta congregación.");
+                    }
+                    frame.contentWindow.postMessage({
+                        tipo: "GIC_CARGAR_ESTADO",
+                        modulo,
+                        estado: data.estado || {}
+                    }, "*");
+                }
+
+                if (escuchasModulos[modulo]) escuchasModulos[modulo]();
+
+                escuchasModulos[modulo] = docRef.onSnapshot(snapshot => {
+                    if (!snapshot.exists) return;
+                    const data = snapshot.data();
+                    if (data.congregacionId !== userProfile.congregacionId ||
+                        data.modulo !== MODULOS_EMBEBIDOS[modulo]) return;
+                    frame.contentWindow.postMessage({
+                        tipo: "GIC_CARGAR_ESTADO",
+                        modulo,
+                        estado: data.estado || {}
+                    }, "*");
+                }, error => mostrarErrorModulo(error, modulo));
+            } catch (error) {
+                mostrarErrorModulo(error, modulo);
+            }
+        }
+
+        window.addEventListener("message", async event => {
+            const msg = event.data;
+            if (!msg || typeof msg !== "object" || !msg.tipo) return;
+
+            const modulo = msg.modulo;
+            const frame = framesModulos[modulo];
+            if (!frame || event.source !== frame.contentWindow ||
+                !MODULOS_EMBEBIDOS[modulo]) return;
+
+            try {
+                const docRef = db.collection("registros").doc(idDocumentoModulo(modulo));
+
+                if (msg.tipo === "GIC_ESTADO_LOCAL") {
+                    const estado = msg.estado && typeof msg.estado === "object"
+                        ? msg.estado : {};
+                    const snap = await docRef.get();
+
+                    // No sobrescribir nunca un estado remoto ya existente.
+                    if (!snap.exists) {
+                        await docRef.set({
+                            congregacionId: userProfile.congregacionId,
+                            modulo: MODULOS_EMBEBIDOS[modulo],
+                            estado,
+                            creado: firebase.firestore.FieldValue.serverTimestamp(),
+                            actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+                            ownerUid: currentUser.uid
+                        });
+                        const verificacion = await docRef.get();
+                        if (!verificacion.exists ||
+                            verificacion.data().congregacionId !== userProfile.congregacionId) {
+                            throw new Error("No se pudo verificar la migración inicial.");
+                        }
+                        frame.contentWindow.postMessage({
+                            tipo: "GIC_MIGRACION_VERIFICADA",
+                            modulo
+                        }, "*");
+                    }
+                }
+
+                if (msg.tipo === "GIC_GUARDAR_ESTADO") {
+                    const estado = msg.estado && typeof msg.estado === "object"
+                        ? msg.estado : {};
+                    await docRef.set({
+                        congregacionId: userProfile.congregacionId,
+                        modulo: MODULOS_EMBEBIDOS[modulo],
+                        estado,
+                        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+                        ownerUid: currentUser.uid
+                    }, { merge: true });
+                }
+            } catch (error) {
+                mostrarErrorModulo(error, modulo);
+                frame.contentWindow.postMessage({
+                    tipo: "GIC_ERROR",
+                    modulo,
+                    mensaje: error?.message || "Error al guardar"
+                }, "*");
+            }
+        });
+
+        function montarModuloFirebase(frame, modulo, htmlBase64) {
+            let contenido = new TextDecoder("utf-8").decode(
+                Uint8Array.from(atob(htmlBase64), c => c.charCodeAt(0))
+            );
+
+            const puenteHijo = `
+<script>
+(function(){
+  const modulo = ${JSON.stringify(modulo)};
+  let aplicandoRemoto = false;
+  let timer = null;
+  function estadoLocal(){
+    const datos = {};
+    const prefijos=PREFIJOS_CLAVES_MODULO[modulo]||[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k!==null && prefijos.some(p=>k.startsWith(p))) datos[k]=localStorage.getItem(k);
+    }
+    return datos;
+  }
+  function avisar(){
+    if(aplicandoRemoto) return;
+    clearTimeout(timer);
+    timer=setTimeout(()=>{
+      parent.postMessage({tipo:"GIC_GUARDAR_ESTADO",modulo,estado:estadoLocal()},"*");
+    },350);
+  }
+  const originalSet=Storage.prototype.setItem;
+  const originalRemove=Storage.prototype.removeItem;
+  const originalClear=Storage.prototype.clear;
+  Storage.prototype.setItem=function(k,v){
+    const r=originalSet.call(this,k,v);
+    if(this===localStorage) avisar();
+    return r;
+  };
+  Storage.prototype.removeItem=function(k){
+    const r=originalRemove.call(this,k);
+    if(this===localStorage) avisar();
+    return r;
+  };
+  Storage.prototype.clear=function(){
+    const r=originalClear.call(this);
+    if(this===localStorage) avisar();
+    return r;
+  };
+  window.addEventListener("message",e=>{
+    const m=e.data;
+    if(!m || m.modulo!==modulo) return;
+    if(m.tipo==="GIC_SOLICITAR_ESTADO"){
+      parent.postMessage({tipo:"GIC_ESTADO_LOCAL",modulo,estado:estadoLocal()},"*");
+    }
+    if(m.tipo==="GIC_CARGAR_ESTADO"){
+      aplicandoRemoto=true;
+      try{
+        const estado=m.estado||{};
+        Object.keys(estado).forEach(k=>originalSet.call(localStorage,k,String(estado[k])));
+        // La carga remota sustituye solamente las claves conocidas de este módulo
+        // mediante las claves recibidas; no ejecuta clear() sobre el almacenamiento compartido.
+        setTimeout(()=>{aplicandoRemoto=false;},500);
+        parent.postMessage({tipo:"GIC_ESTADO_APLICADO",modulo},"*");
+      }catch(err){
+        aplicandoRemoto=false;
+        parent.postMessage({tipo:"GIC_ERROR",modulo,mensaje:err.message},"*");
+      }
+    }
+    if(m.tipo==="GIC_ERROR"){
+      console.error("Firebase:",m.mensaje);
+      const aviso=document.createElement("div");
+      aviso.textContent="Aviso: no se pudo sincronizar con Firebase. Los cambios locales permanecen en este navegador.";
+      aviso.style.cssText="position:fixed;z-index:999999;bottom:12px;left:12px;right:12px;padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;font:13px sans-serif";
+      document.body.appendChild(aviso);
+      setTimeout(()=>aviso.remove(),6000);
+    }
+  });
+})();
+<\/script>`;
+            contenido = contenido.replace(/<\/body>/i, puenteHijo + "</body>");
+            frame.srcdoc = contenido;
+            frame.addEventListener("load", () => iniciarPuenteModulo(frame, modulo), { once: true });
         }
 
         function switchModule(mod) {
@@ -546,7 +750,7 @@
                     style="display:block;width:100%;min-height:1800px;height:calc(100vh - 190px);border:0;border-radius:14px;background:#f1f5f9"
                     referrerpolicy="same-origin"></iframe>`;
                 const frame = document.getElementById('servicioCampoFrame');
-                frame.srcdoc = new TextDecoder("utf-8").decode(Uint8Array.from(atob(SERVICIO_CAMPO_HTML_B64), c => c.charCodeAt(0)));
+                montarModuloFirebase(frame, "servicio", SERVICIO_CAMPO_HTML_B64);
                 return;
             }
 
@@ -557,7 +761,7 @@
                     style="display:block;width:100%;min-height:1900px;height:calc(100vh - 190px);border:0;border-radius:14px;background:#f1f5f9"
                     referrerpolicy="same-origin"></iframe>`;
                 const frame = document.getElementById('predicacionPublicaFrame');
-                frame.srcdoc = new TextDecoder("utf-8").decode(Uint8Array.from(atob(PREDICACION_PUBLICA_HTML_B64), c => c.charCodeAt(0)));
+                montarModuloFirebase(frame, "predicacion", PREDICACION_PUBLICA_HTML_B64);
                 return;
             }
 
@@ -568,7 +772,7 @@
                     style="display:block;width:100%;min-height:2100px;height:calc(100vh - 190px);border:0;border-radius:14px;background:#f1f5f9"
                     referrerpolicy="same-origin"></iframe>`;
                 const frame = document.getElementById('inventarioPublicacionesFrame');
-                frame.srcdoc = new TextDecoder("utf-8").decode(Uint8Array.from(atob(INVENTARIO_PUBLICACIONES_HTML_B64), c => c.charCodeAt(0)));
+                montarModuloFirebase(frame, "inventario", INVENTARIO_PUBLICACIONES_HTML_B64);
                 return;
             }
 
@@ -579,7 +783,7 @@
                     style="display:block;width:100%;min-height:2800px;height:calc(100vh - 190px);border:0;border-radius:14px;background:#f1f5f9"
                     referrerpolicy="same-origin"></iframe>`;
                 const frame = document.getElementById('asignacionesCongregacionFrame');
-                frame.srcdoc = new TextDecoder("utf-8").decode(Uint8Array.from(atob(ASIGNACIONES_CONGREGACION_HTML_B64), c => c.charCodeAt(0)));
+                montarModuloFirebase(frame, "asignaciones", ASIGNACIONES_CONGREGACION_HTML_B64);
                 return;
             }
 
@@ -589,16 +793,11 @@
                     style="display:block;width:100%;min-height:2600px;height:calc(100vh - 190px);border:0;border-radius:14px;background:#f1f5f9"
                     referrerpolicy="same-origin"></iframe>`;
                 const frame = document.getElementById('discursosPublicosFrame');
-                frame.srcdoc = new TextDecoder("utf-8").decode(Uint8Array.from(atob(DISCURSOS_PUBLICOS_HTML_B64), c => c.charCodeAt(0)));
+                montarModuloFirebase(frame, "discursos", DISCURSOS_PUBLICOS_HTML_B64);
                 return;
             }
 
             if (currentModule === 'admin') {
-                if (!esAdministradorGeneral()) {
-                    currentModule = 'campo';
-                    renderCurrentModule();
-                    return;
-                }
                 container.innerHTML = `
                     <div class="space-y-6">
                         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

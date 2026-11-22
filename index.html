@@ -177,6 +177,12 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Administrador general: se identifica por UID, no por el campo editable "rol".
+        const ADMIN_GENERAL_UID = 'iiwvSfU540dRN4F0BiYxSLxKf0v1';
+        function esAdministradorGeneral() {
+            return !!currentUser && currentUser.uid === ADMIN_GENERAL_UID;
+        }
+
         let currentUser = null, userProfile = null, currentModule = 'campo';
         let records = [], pendingUsers = [];
 
@@ -271,9 +277,10 @@
 
                 document.getElementById('header-cong-name').textContent = `${userProfile.congregacion} (#${userProfile.numeroCong})`;
                 document.getElementById('header-user-name').textContent = userProfile.nombre;
-                document.getElementById('header-user-role').textContent = userProfile.rol === 'admin' ? 'Administrador' : 'Publicador';
+                const esAdminGeneral = esAdministradorGeneral();
+                document.getElementById('header-user-role').textContent = esAdminGeneral ? 'Administrador general' : 'Publicador';
 
-                if (userProfile.rol === 'admin') {
+                if (esAdminGeneral) {
                     document.getElementById('nav-tab-admin').classList.remove('hidden');
                     loadPendingUsers();
                 }
@@ -286,20 +293,33 @@
         });
 
         function loadPendingUsers() {
+            if (!esAdministradorGeneral()) return;
+
+            // El administrador general consulta solicitudes de todas las congregaciones.
             db.collection('usuarios')
-              .where('congregacionId', '==', userProfile.congregacionId)
               .where('estado', '==', 'pendiente')
               .onSnapshot(snapshot => {
                   pendingUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                   if (currentModule === 'admin') renderCurrentModule();
+              }, err => {
+                  console.error('Error al cargar solicitudes pendientes:', err);
+                  showToast('No se pudieron cargar las solicitudes: ' + err.message, 'error');
               });
         }
 
         function initAppData() {
-            db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
-              .onSnapshot(snapshot => {
+            // El administrador general consulta todos los registros; los demás,
+            // únicamente los que pertenecen a su congregación.
+            const consultaRegistros = esAdministradorGeneral()
+                ? db.collection('registros')
+                : db.collection('registros').where('congregacionId', '==', userProfile.congregacionId);
+
+            consultaRegistros.onSnapshot(snapshot => {
                   records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                   renderCurrentModule();
+              }, err => {
+                  console.error('Error al cargar registros:', err);
+                  showToast('No se pudieron cargar los registros: ' + err.message, 'error');
               });
             renderCurrentModule();
             lucide.createIcons();
@@ -574,6 +594,11 @@
             }
 
             if (currentModule === 'admin') {
+                if (!esAdministradorGeneral()) {
+                    currentModule = 'campo';
+                    renderCurrentModule();
+                    return;
+                }
                 container.innerHTML = `
                     <div class="space-y-6">
                         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

@@ -477,12 +477,16 @@
   const modulo = ${JSON.stringify(modulo)};
   let aplicandoRemoto = false;
   let timer = null;
+  // Los prefijos se inyectan desde la ventana principal como dato literal.
+  // El iframe srcdoc no comparte las variables JavaScript del documento padre.
+  const prefijos = ${JSON.stringify(PREFIJOS_CLAVES_MODULO[modulo] || [])};
   function estadoLocal(){
     const datos = {};
-    const prefijos=PREFIJOS_CLAVES_MODULO[modulo]||[];
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
-      if(k!==null && prefijos.some(p=>k.startsWith(p))) datos[k]=localStorage.getItem(k);
+      if(k!==null && prefijos.some(p=>k.startsWith(p))) {
+        datos[k]=localStorage.getItem(k);
+      }
     }
     return datos;
   }

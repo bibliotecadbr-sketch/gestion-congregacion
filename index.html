@@ -120,6 +120,7 @@
                 <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
                     <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i> Servicio del Campo</button>
                     <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="store" class="w-4 h-4"></i> Predicación Pública</button>
+                    <button onclick="switchModule('publicaciones')" data-tab="publicaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="book" class="w-4 h-4"></i> Informe de Publicaciones</button>
                     <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="mic" class="w-4 h-4"></i> Asignaciones</button>
                     <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="presentation" class="w-4 h-4"></i> Discursos Públicos</button>
                     <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="book-open" class="w-4 h-4"></i> Vida y Ministerio</button>
@@ -328,6 +329,7 @@
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Conductor</label><input type="text" id="f-conductor" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Territorio(s)</label><input type="text" id="f-territorio" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Punto de Encuentro</label><input type="text" id="f-punto" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Concluido (Fecha)</label><input type="date" id="f-concluido" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                 `;
             } else if (type === 'publica') {
                 html = `
@@ -336,10 +338,23 @@
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación</label><input type="text" id="f-ubicacion" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Publicadores</label><input type="text" id="f-publicadores" placeholder="Nombre 1 y Nombre 2" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                 `;
+            } else if (type === 'publicaciones') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Mes y Año</label><input type="month" id="f-mes" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre del Publicador</label><input type="text" id="f-publicador" required placeholder="Ej. Juan Pérez" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tratados</label><input type="number" id="f-tratados" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Revistas</label><input type="number" id="f-revistas" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Folletos</label><input type="number" id="f-folletos" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Libros</label><input type="number" id="f-libros" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    </div>
+                `;
             } else if (type === 'asistencia') {
                 html = `
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tipo de Reunión</label><select id="f-reunion" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"><option>Entre Semana</option><option>Fin de Semana</option></select></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tipo de Reunión</label><select id="f-reunion" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"><option value="Entre Semana">Entre Semana</option><option value="Fin de Semana">Fin de Semana</option></select></div>
                     <div class="grid grid-cols-2 gap-2">
                         <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Presencial</label><input type="number" id="f-presencial" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                         <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Zoom</label><input type="number" id="f-zoom" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
@@ -362,9 +377,16 @@
                     if (document.getElementById('f-conductor')) document.getElementById('f-conductor').value = rec.conductor || '';
                     if (document.getElementById('f-territorio')) document.getElementById('f-territorio').value = rec.territorio || '';
                     if (document.getElementById('f-punto')) document.getElementById('f-punto').value = rec.punto || '';
+                    if (document.getElementById('f-concluido')) document.getElementById('f-concluido').value = rec.concluido || '';
                     if (document.getElementById('f-horario')) document.getElementById('f-horario').value = rec.horario || '';
                     if (document.getElementById('f-ubicacion')) document.getElementById('f-ubicacion').value = rec.ubicacion || '';
                     if (document.getElementById('f-publicadores')) document.getElementById('f-publicadores').value = rec.publicadores || '';
+                    if (document.getElementById('f-mes')) document.getElementById('f-mes').value = rec.mes || '';
+                    if (document.getElementById('f-publicador')) document.getElementById('f-publicador').value = rec.publicador || '';
+                    if (document.getElementById('f-tratados')) document.getElementById('f-tratados').value = rec.tratados || 0;
+                    if (document.getElementById('f-revistas')) document.getElementById('f-revistas').value = rec.revistas || 0;
+                    if (document.getElementById('f-folletos')) document.getElementById('f-folletos').value = rec.folletos || 0;
+                    if (document.getElementById('f-libros')) document.getElementById('f-libros').value = rec.libros || 0;
                     if (document.getElementById('f-reunion')) document.getElementById('f-reunion').value = rec.reunion || '';
                     if (document.getElementById('f-presencial')) document.getElementById('f-presencial').value = rec.presencial || 0;
                     if (document.getElementById('f-zoom')) document.getElementById('f-zoom').value = rec.zoom || 0;
@@ -398,10 +420,18 @@
                 data.conductor = document.getElementById('f-conductor').value;
                 data.territorio = document.getElementById('f-territorio').value;
                 data.punto = document.getElementById('f-punto').value;
+                data.concluido = document.getElementById('f-concluido').value || '';
             } else if (type === 'publica') {
                 data.horario = document.getElementById('f-horario').value;
                 data.ubicacion = document.getElementById('f-ubicacion').value;
                 data.publicadores = document.getElementById('f-publicadores').value;
+            } else if (type === 'publicaciones') {
+                data.mes = document.getElementById('f-mes').value;
+                data.publicador = document.getElementById('f-publicador').value;
+                data.tratados = parseInt(document.getElementById('f-tratados').value) || 0;
+                data.revistas = parseInt(document.getElementById('f-revistas').value) || 0;
+                data.folletos = parseInt(document.getElementById('f-folletos').value) || 0;
+                data.libros = parseInt(document.getElementById('f-libros').value) || 0;
             } else if (type === 'asistencia') {
                 data.reunion = document.getElementById('f-reunion').value;
                 data.presencial = parseInt(document.getElementById('f-presencial').value) || 0;
@@ -459,6 +489,45 @@
             }
         }
 
+        function calculateS88Data(reunionTipo) {
+            const mesesOrden = [
+                { id: 9, nombre: 'Sept.' }, { id: 10, nombre: 'Oct.' }, { id: 11, nombre: 'Nov.' }, { id: 12, nombre: 'Dic.' },
+                { id: 1, nombre: 'En.' }, { id: 2, nombre: 'Feb.' }, { id: 3, nombre: 'Mzo.' }, { id: 4, nombre: 'Abr.' },
+                { id: 5, nombre: 'Mayo' }, { id: 6, nombre: 'Jun.' }, { id: 7, nombre: 'Jul.' }, { id: 8, nombre: 'Ag.' }
+            ];
+
+            const asistenciaRecords = records.filter(r => r.modulo === 'asistencia' && r.reunion === reunionTipo);
+            
+            let totalReunionesAnual = 0;
+            let totalAsistenciaAnual = 0;
+
+            const filas = mesesOrden.map(m => {
+                const delMes = asistenciaRecords.filter(r => {
+                    if (!r.fecha) return false;
+                    const d = new Date(r.fecha + 'T00:00:00');
+                    return (d.getMonth() + 1) === m.id;
+                });
+
+                const numReuniones = delMes.length;
+                const asistTotal = delMes.reduce((acc, curr) => acc + (curr.total || 0), 0);
+                const promSemanal = numReuniones > 0 ? (asistTotal / numReuniones).toFixed(1) : '0';
+
+                totalReunionesAnual += numReuniones;
+                totalAsistenciaAnual += asistTotal;
+
+                return {
+                    mes: m.nombre,
+                    reuniones: numReuniones,
+                    totalMes: asistTotal,
+                    promedio: promSemanal
+                };
+            });
+
+            const promedioAnual = totalReunionesAnual > 0 ? (totalAsistenciaAnual / totalReunionesAnual).toFixed(1) : '0';
+
+            return { filas, totalReunionesAnual, totalAsistenciaAnual, promedioAnual };
+        }
+
         function renderCurrentModule() {
             const container = document.getElementById('module-container');
             const filteredRecords = records.filter(r => r.modulo === currentModule);
@@ -490,11 +559,139 @@
                 return;
             }
 
+            // MÓDULO ASISTENCIA
+            if (currentModule === 'asistencia') {
+                const entreSemana = calculateS88Data('Entre Semana');
+                const finSemana = calculateS88Data('Fin de Semana');
+
+                container.innerHTML = `
+                    <div class="space-y-8">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-800">Registro de Asistencia a las Reuniones (S-88-S)</h2>
+                                <p class="text-xs sm:text-sm text-slate-500">Historial detallado y formulario oficial sincronizado.</p>
+                            </div>
+                            <button onclick="openRecordModal('asistencia')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Registrar Asistencia de Reunión
+                            </button>
+                        </div>
+
+                        <!-- 1. HISTORIAL DETALLADO -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                            <h3 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-indigo-600"></i> Historial detallado de asistencias ingresadas</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-600">
+                                            <th class="py-2.5 px-3">Fecha</th>
+                                            <th class="py-2.5 px-3">Tipo de Reunión</th>
+                                            <th class="py-2.5 px-3">Presencial</th>
+                                            <th class="py-2.5 px-3">Zoom</th>
+                                            <th class="py-2.5 px-3">Total</th>
+                                            <th class="py-2.5 px-3 text-right no-print">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-6 text-slate-400">No hay registros de asistencia guardados.</td></tr>` :
+                                            filteredRecords.map(r => `
+                                                <tr class="hover:bg-slate-50">
+                                                    <td class="py-2.5 px-3 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                    <td class="py-2.5 px-3 text-slate-600">${r.reunion || '-'}</td>
+                                                    <td class="py-2.5 px-3 text-slate-800">${r.presencial || 0}</td>
+                                                    <td class="py-2.5 px-3 text-slate-800">${r.zoom || 0}</td>
+                                                    <td class="py-2.5 px-3 font-bold text-indigo-600">${r.total || 0}</td>
+                                                    <td class="py-2.5 px-3 text-right no-print space-x-2">
+                                                        <button onclick="openRecordModal('asistencia', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                        <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 2. TABLA S-88-S: ENTRE SEMANA -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i> Reunión de entre semana</h3>
+                                <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-medium">Control Mensual / Anual</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-100 border-b border-slate-300 text-xs font-semibold uppercase text-slate-700">
+                                            <th class="py-2.5 px-3 border">Mes</th>
+                                            <th class="py-2.5 px-3 border text-center">Núm. de reuns.</th>
+                                            <th class="py-2.5 px-3 border text-center">Asist. total para el mes</th>
+                                            <th class="py-2.5 px-3 border text-center">Prom. de asist. semanal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        ${entreSemana.filas.map(f => `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="py-2 px-3 border font-medium text-slate-800">${f.mes}</td>
+                                                <td class="py-2 px-3 border text-center text-slate-600">${f.reuniones}</td>
+                                                <td class="py-2 px-3 border text-center text-slate-600">${f.totalMes}</td>
+                                                <td class="py-2 px-3 border text-center font-semibold text-indigo-600">${f.promedio}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr class="bg-slate-50 font-bold text-slate-800">
+                                            <td class="py-2.5 px-3 border">Total / Promedio Anual *</td>
+                                            <td class="py-2.5 px-3 border text-center">${entreSemana.totalReunionesAnual}</td>
+                                            <td class="py-2.5 px-3 border text-center">${entreSemana.totalAsistenciaAnual}</td>
+                                            <td class="py-2.5 px-3 border text-center text-indigo-700">${entreSemana.promedioAnual} *</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 3. TABLA S-88-S: FIN DE SEMANA -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-5">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i> Reunión del fin de semana</h3>
+                                <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-medium">Control Mensual / Anual</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-100 border-b border-slate-300 text-xs font-semibold uppercase text-slate-700">
+                                            <th class="py-2.5 px-3 border">Mes</th>
+                                            <th class="py-2.5 px-3 border text-center">Núm. de reuns.</th>
+                                            <th class="py-2.5 px-3 border text-center">Asist. total para el mes</th>
+                                            <th class="py-2.5 px-3 border text-center">Prom. de asist. semanal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        ${finSemana.filas.map(f => `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="py-2 px-3 border font-medium text-slate-800">${f.mes}</td>
+                                                <td class="py-2 px-3 border text-center text-slate-600">${f.reuniones}</td>
+                                                <td class="py-2 px-3 border text-center text-slate-600">${f.totalMes}</td>
+                                                <td class="py-2 px-3 border text-center font-semibold text-emerald-600">${f.promedio}</td>
+                                            </tr>
+                                        `).join('')}
+                                        <tr class="bg-slate-50 font-bold text-slate-800">
+                                            <td class="py-2.5 px-3 border">Total / Promedio Anual *</td>
+                                            <td class="py-2.5 px-3 border text-center">${finSemana.totalReunionesAnual}</td>
+                                            <td class="py-2.5 px-3 border text-center">${finSemana.totalAsistenciaAnual}</td>
+                                            <td class="py-2.5 px-3 border text-center text-emerald-700">${finSemana.promedioAnual} *</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
             let title = currentModule === 'campo' ? 'Servicio del Campo' :
                         currentModule === 'publica' ? 'Predicación Pública' :
+                        currentModule === 'publicaciones' ? 'Informe Mensual de Publicaciones' :
                         currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
-                        currentModule === 'discursos' ? 'Discursos Públicos' :
-                        currentModule === 'vidaministerio' ? 'Reunión Vida y Ministerio' : 'Control de Asistencia';
+                        currentModule === 'discursos' ? 'Discursos Públicos' : 'Reunión Vida y Ministerio';
 
             container.innerHTML = `
                 <div class="space-y-5">
@@ -513,35 +710,36 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        <th class="py-3 px-4">Fecha</th>
-                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th>' : ''}
+                                        ${currentModule === 'publicaciones' ? '<th class="py-3 px-4">Mes</th><th class="py-3 px-4">Publicador</th><th class="py-3 px-4">Tratados</th><th class="py-3 px-4">Revistas</th><th class="py-3 px-4">Folletos</th><th class="py-3 px-4">Libros</th>' : '<th class="py-3 px-4">Fecha</th>'}
+                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th><th class="py-3 px-4">Concluido</th>' : ''}
                                         ${currentModule === 'publica' ? '<th class="py-3 px-4">Horario</th><th class="py-3 px-4">Ubicación</th><th class="py-3 px-4">Publicadores</th>' : ''}
-                                        ${currentModule === 'asistencia' ? '<th class="py-3 px-4">Reunión</th><th class="py-3 px-4">Presencial</th><th class="py-3 px-4">Zoom</th><th class="py-3 px-4">Total</th>' : ''}
                                         ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
                                         <th class="py-3 px-4 text-right no-print">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 text-sm">
-                                    ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
+                                    ${filteredRecords.length === 0 ? `<tr><td colspan="7" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
                                         filteredRecords.map(r => `
                                             <tr class="hover:bg-slate-50/50">
-                                                <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                ${currentModule === 'publicaciones' ? `
+                                                    <td class="py-3 px-4 font-medium text-slate-800">${r.mes || '-'}</td>
+                                                    <td class="py-3 px-4 font-semibold text-slate-800">${r.publicador || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.tratados || 0}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.revistas || 0}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.folletos || 0}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.libros || 0}</td>
+                                                ` : `<td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>`}
                                                 ${currentModule === 'campo' ? `
                                                     <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
+                                                    <td class="py-3 px-4 text-emerald-600 font-medium">${r.concluido || '-'}</td>
                                                 ` : ''}
                                                 ${currentModule === 'publica' ? `
                                                     <td class="py-3 px-4 text-slate-600">${r.horario || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.ubicacion || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-600">${r.publicadores || '-'}</td>
-                                                ` : ''}
-                                                ${currentModule === 'asistencia' ? `
-                                                    <td class="py-3 px-4 text-slate-600">${r.reunion || '-'}</td>
-                                                    <td class="py-3 px-4 text-slate-800">${r.presencial || 0}</td>
-                                                    <td class="py-3 px-4 text-slate-800">${r.zoom || 0}</td>
-                                                    <td class="py-3 px-4 font-bold text-indigo-600">${r.total || 0}</td>
                                                 ` : ''}
                                                 ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? `
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.titulo || '-'}</td>

@@ -546,7 +546,16 @@
   });
 })();
 <\/script>`;
-            contenido = contenido.replace(/<\/body>/i, puenteHijo + "</body>");
+            // Insertar el puente antes del cierre REAL del documento.
+            // El HTML del módulo contiene también una plantilla de impresión con
+            // la cadena literal </body>; replace() encontraba esa cadena dentro
+            // de un template string JavaScript y truncaba el script del iframe.
+            const cierreBody = contenido.toLowerCase().lastIndexOf("</body>");
+            if (cierreBody >= 0) {
+                contenido = contenido.slice(0, cierreBody) + puenteHijo + contenido.slice(cierreBody);
+            } else {
+                contenido += puenteHijo;
+            }
             // Registrar el evento antes de asignar srcdoc evita perder el primer load.
             frame.addEventListener("load", () => iniciarPuenteModulo(frame, modulo), { once: true });
             frame.srcdoc = contenido;

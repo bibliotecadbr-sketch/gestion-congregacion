@@ -342,8 +342,19 @@
                 (error?.message || "error de conexión/permisos"), "error");
         }
 
+        function enviarAlIframe(frame, mensaje) {
+            // Un iframe puede desaparecer cuando el usuario cambia de módulo.
+            // En ese caso no se intenta usar contentWindow.
+            if (!frame || !frame.isConnected) return false;
+            const destino = frame.contentWindow;
+            if (!destino) return false;
+            destino.postMessage(mensaje, window.location.origin);
+            return true;
+        }
+
         async function iniciarPuenteModulo(frame, modulo) {
-            if (!frame || !MODULOS_EMBEBIDOS[modulo] || !currentUser ||
+            if (!frame || !frame.isConnected ||
+                !MODULOS_EMBEBIDOS[modulo] || !currentUser ||
                 !userProfile || userProfile.estado !== "aprobado") return;
 
             framesModulos[modulo] = frame;
@@ -351,40 +362,47 @@
 
             try {
                 const cloud = await docRef.get();
+
+                // El usuario pudo cambiar de pestaña mientras Firestore respondía.
+                if (!frame.isConnected || framesModulos[modulo] !== frame) return;
+
                 if (!cloud.exists) {
-                    // Primera conexión: copiar el almacenamiento local del módulo.
-                    frame.contentWindow.postMessage({
+                    enviarAlIframe(frame, {
                         tipo: "GIC_SOLICITAR_ESTADO",
                         modulo
-                    }, "*");
+                    });
                 } else {
                     const data = cloud.data();
                     if (data.congregacionId !== userProfile.congregacionId ||
                         data.modulo !== MODULOS_EMBEBIDOS[modulo]) {
                         throw new Error("El documento remoto no corresponde a esta congregación.");
                     }
-                    frame.contentWindow.postMessage({
+                    enviarAlIframe(frame, {
                         tipo: "GIC_CARGAR_ESTADO",
                         modulo,
                         estado: data.estado || {}
-                    }, "*");
+                    });
                 }
 
                 if (escuchasModulos[modulo]) escuchasModulos[modulo]();
 
                 escuchasModulos[modulo] = docRef.onSnapshot(snapshot => {
-                    if (!snapshot.exists) return;
+                    if (!snapshot.exists || !frame.isConnected ||
+                        framesModulos[modulo] !== frame) return;
                     const data = snapshot.data();
                     if (data.congregacionId !== userProfile.congregacionId ||
                         data.modulo !== MODULOS_EMBEBIDOS[modulo]) return;
-                    frame.contentWindow.postMessage({
+                    enviarAlIframe(frame, {
                         tipo: "GIC_CARGAR_ESTADO",
                         modulo,
                         estado: data.estado || {}
-                    }, "*");
+                    });
                 }, error => mostrarErrorModulo(error, modulo));
             } catch (error) {
-                mostrarErrorModulo(error, modulo);
+                // Si el iframe ya fue retirado, no mostrar un falso error de sincronización.
+                if (frame.isConnected && framesModulos[modulo] === frame) {
+                    mostrarErrorModulo(error, modulo);
+                }
             }
         }
 
@@ -440,11 +458,11 @@
                 }
             } catch (error) {
                 mostrarErrorModulo(error, modulo);
-                frame.contentWindow.postMessage({
+                enviarAlIframe(frame, {
                     tipo: "GIC_ERROR",
                     modulo,
                     mensaje: error?.message || "Error al guardar"
-                }, "*");
+                });
             }
         });
 
@@ -525,8 +543,9 @@
 })();
 <\/script>`;
             contenido = contenido.replace(/<\/body>/i, puenteHijo + "</body>");
-            frame.srcdoc = contenido;
+            // Registrar el evento antes de asignar srcdoc evita perder el primer load.
             frame.addEventListener("load", () => iniciarPuenteModulo(frame, modulo), { once: true });
+            frame.srcdoc = contenido;
         }
 
         function switchModule(mod) {

@@ -1,1177 +1,565 @@
 <!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusHub — Portal de Recursos y Biblioteca de Enlaces</title>
-    <!-- Carga de Tailwind CSS -->
+    <title>Gestión Integral de Congregación</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fuente Inter desde Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Configuración personalizada de Tailwind -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        @media print {
+            @page { size: landscape; margin: 1.2cm; }
+            body { background-color: #ffffff !important; color: #000000 !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #334155 !important; padding: 6px 8px !important; color: #000000 !important; }
+            th { background-color: #e2e8f0 !important; font-weight: 700 !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 no-print max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Pantalla de Carga -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white">
+        <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-lg font-medium">Conectando con la nube...</p>
+        <p class="text-xs text-slate-400 mt-1">Sincronizando datos de la congregación</p>
+    </div>
+
+    <!-- VISTA AUTENTICACIÓN (LOGIN / REGISTRO) -->
+    <div id="auth-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-800 via-indigo-950 to-slate-900">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-indigo-700 p-6 text-white text-center">
+                <h1 class="text-2xl font-bold">Gestión de Congregación</h1>
+                <p class="text-indigo-200 text-sm mt-1">Plataforma sincronizada</p>
+            </div>
+
+            <!-- Pestañas -->
+            <div class="flex border-b border-slate-200">
+                <button id="tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition">Iniciar Sesión</button>
+                <button id="tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition">Registrarse</button>
+            </div>
+
+            <!-- Formulario Login -->
+            <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Correo Electrónico</label>
+                    <input type="email" id="login-email" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Contraseña</label>
+                    <input type="password" id="login-password" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition">Entrar al Sistema</button>
+            </form>
+
+            <!-- Formulario Registro -->
+            <form id="register-form" onsubmit="handleRegister(event)" class="hidden p-6 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre y Apellido</label>
+                    <input type="text" id="reg-name" required placeholder="Ej. Carlos Mendoza" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre Congregación</label>
+                        <input type="text" id="reg-cong-name" required placeholder="Ej. Espanhola" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">N° Cong.</label>
+                        <input type="text" id="reg-cong-number" required placeholder="Ej. 2525" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Correo Electrónico</label>
+                    <input type="email" id="reg-email" required placeholder="correo@ejemplo.com" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Contraseña (mín. 6 caracteres)</label>
+                    <input type="password" id="reg-password" required minlength="6" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                    Tu cuenta quedará en estado <strong>Pendiente de Autorización</strong> hasta que un administrador la apruebe.
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition">Crear Cuenta y Solicitar Acceso</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VISTA PENDIENTE -->
+    <div id="pending-view" class="hidden min-h-screen flex items-center justify-center p-4 bg-slate-100">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800">Pendiente de Autorización</h2>
+            <p class="text-sm text-slate-600 mt-2">Tu cuenta está esperando aprobación de un administrador.</p>
+            <button onclick="handleLogout()" class="mt-6 w-full py-2.5 bg-slate-800 text-white text-sm font-medium rounded-xl">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="app-view" class="hidden flex-1 flex flex-col">
+        <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div>
+                    <h1 id="header-cong-name" class="font-bold text-lg">Congregación</h1>
+                    <p class="text-xs text-slate-400"><span id="header-user-name">Usuario</span> • <span id="header-user-role" class="text-emerald-400 font-medium">Rol</span></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir</button>
+                    <button onclick="handleLogout()" class="p-2 bg-slate-800 hover:bg-rose-600 text-slate-300 rounded-lg" title="Cerrar Sesión"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <nav class="bg-slate-800 border-t border-slate-700 overflow-x-auto">
+                <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
+                    <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i> Servicio del Campo</button>
+                    <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="store" class="w-4 h-4"></i> Predicación Pública</button>
+                    <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="mic" class="w-4 h-4"></i> Asignaciones</button>
+                    <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="presentation" class="w-4 h-4"></i> Discursos Públicos</button>
+                    <button onclick="switchModule('vidaministerio')" data-tab="vidaministerio" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="book-open" class="w-4 h-4"></i> Vida y Ministerio</button>
+                    <button onclick="switchModule('asistencia')" data-tab="asistencia" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> Asistencia</button>
+                    <button onclick="switchModule('admin')" data-tab="admin" id="nav-tab-admin" class="hidden tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="settings" class="w-4 h-4"></i> Administración</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+            <div id="module-container"></div>
+        </main>
+    </div>
+
+    <!-- MODAL DE REGISTRO / EDICIÓN -->
+    <div id="record-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div class="bg-indigo-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-lg">Nuevo Registro</h3>
+                <button onclick="closeRecordModal()" class="text-indigo-200 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="record-form" onsubmit="saveRecord(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="record-id">
+                <input type="hidden" id="record-type">
+                <div id="modal-fields" class="space-y-4"></div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeRecordModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl shadow">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
-                    }
+        const firebaseConfig = {
+            apiKey: "AIzaSyCczrVnAhSPtKn-iHYbs8pgTR_6rN9xz3E",
+            authDomain: "integral-474fd.firebaseapp.com",
+            projectId: "integral-474fd",
+            storageBucket: "integral-474fd.firebasestorage.app",
+            messagingSenderId: "600156147998",
+            appId: "1:600156147998:web:c72dfc566c5e89881fb90f"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null, userProfile = null, currentModule = 'campo';
+        let records = [], pendingUsers = [];
+
+        function showToast(msg, type = 'success') {
+            const tc = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `p-3 rounded-xl text-sm font-medium text-white shadow-lg ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            t.textContent = msg;
+            tc.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('tab-login-btn').className = "flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition";
+                document.getElementById('tab-register-btn').className = "flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition";
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('tab-register-btn').className = "flex-1 py-3.5 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition";
+                document.getElementById('tab-login-btn').className = "flex-1 py-3.5 text-sm font-semibold text-slate-500 hover:text-slate-700 transition";
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                showToast("Sesión iniciada");
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const congName = document.getElementById('reg-cong-name').value.trim();
+            const congNum = document.getElementById('reg-cong-number').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-password').value;
+            const congId = congName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g, '-') + '-' + congNum;
+
+            try {
+                const cred = await auth.createUserWithEmailAndPassword(email, pass);
+                await db.collection('usuarios').doc(cred.user.uid).set({
+                    uid: cred.user.uid, nombre: name, congregacion: congName, numeroCong: congNum,
+                    congregacionId: congId, email: email, estado: 'pendiente', rol: 'usuario',
+                    creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast("Cuenta creada. Solicitud enviada al administrador.");
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleLogout() {
+            await auth.signOut();
+            location.reload();
+        }
+
+        auth.onAuthStateChanged(async user => {
+            currentUser = user;
+            if (!user) {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('pending-view').classList.add('hidden');
+                document.getElementById('app-view').classList.add('hidden');
+                return;
+            }
+
+            try {
+                const snap = await db.collection('usuarios').doc(user.uid).get();
+                if (!snap.exists) { await auth.signOut(); return; }
+                userProfile = snap.data();
+
+                if (userProfile.estado !== 'aprobado') {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('auth-view').classList.add('hidden');
+                    document.getElementById('pending-view').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('pending-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('hidden');
+
+                document.getElementById('header-cong-name').textContent = `${userProfile.congregacion} (#${userProfile.numeroCong})`;
+                document.getElementById('header-user-name').textContent = userProfile.nombre;
+                document.getElementById('header-user-role').textContent = userProfile.rol === 'admin' ? 'Administrador' : 'Publicador';
+
+                if (userProfile.rol === 'admin') {
+                    document.getElementById('nav-tab-admin').classList.remove('hidden');
+                    loadPendingUsers();
+                }
+
+                initAppData();
+            } catch (err) {
+                console.error(err);
+                showToast("Error al cargar perfil", 'error');
+            }
+        });
+
+        function loadPendingUsers() {
+            db.collection('usuarios')
+              .where('congregacionId', '==', userProfile.congregacionId)
+              .where('estado', '==', 'pendiente')
+              .onSnapshot(snapshot => {
+                  pendingUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  if (currentModule === 'admin') renderCurrentModule();
+              });
+        }
+
+        function initAppData() {
+            db.collection('registros').where('congregacionId', '==', userProfile.congregacionId)
+              .onSnapshot(snapshot => {
+                  records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  renderCurrentModule();
+              });
+            renderCurrentModule();
+            lucide.createIcons();
+        }
+
+        function switchModule(mod) {
+            currentModule = mod;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === mod) {
+                    btn.className = "tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5";
+                } else {
+                    btn.className = "tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5";
+                }
+            });
+            renderCurrentModule();
+        }
+
+        function openRecordModal(type, id = null) {
+            document.getElementById('record-type').value = type;
+            document.getElementById('record-id').value = id || '';
+            document.getElementById('modal-title').textContent = id ? 'Editar Registro' : 'Nuevo Registro';
+            
+            const fieldsContainer = document.getElementById('modal-fields');
+            fieldsContainer.innerHTML = '';
+
+            let html = '';
+            if (type === 'campo') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Hora</label><input type="text" id="f-hora" placeholder="Ej. 09:00 a.m." required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Conductor</label><input type="text" id="f-conductor" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Territorio(s)</label><input type="text" id="f-territorio" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Punto de Encuentro</label><input type="text" id="f-punto" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            } else if (type === 'publica') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Horario / Turno</label><input type="text" id="f-horario" placeholder="Ej. 10:00 - 11:30" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación</label><input type="text" id="f-ubicacion" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Publicadores</label><input type="text" id="f-publicadores" placeholder="Nombre 1 y Nombre 2" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            } else if (type === 'asistencia') {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tipo de Reunión</label><select id="f-reunion" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"><option>Entre Semana</option><option>Fin de Semana</option></select></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Presencial</label><input type="number" id="f-presencial" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Zoom</label><input type="number" id="f-zoom" value="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Detalles / Título</label><input type="text" id="f-titulo" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm" placeholder="Descripción de la asignación"></div>
+                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Participante(s)</label><input type="text" id="f-participantes" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                `;
+            }
+
+            fieldsContainer.innerHTML = html;
+            if (id) {
+                const rec = records.find(r => r.id === id);
+                if (rec) {
+                    if (document.getElementById('f-fecha')) document.getElementById('f-fecha').value = rec.fecha || '';
+                    if (document.getElementById('f-hora')) document.getElementById('f-hora').value = rec.hora || '';
+                    if (document.getElementById('f-conductor')) document.getElementById('f-conductor').value = rec.conductor || '';
+                    if (document.getElementById('f-territorio')) document.getElementById('f-territorio').value = rec.territorio || '';
+                    if (document.getElementById('f-punto')) document.getElementById('f-punto').value = rec.punto || '';
+                    if (document.getElementById('f-horario')) document.getElementById('f-horario').value = rec.horario || '';
+                    if (document.getElementById('f-ubicacion')) document.getElementById('f-ubicacion').value = rec.ubicacion || '';
+                    if (document.getElementById('f-publicadores')) document.getElementById('f-publicadores').value = rec.publicadores || '';
+                    if (document.getElementById('f-reunion')) document.getElementById('f-reunion').value = rec.reunion || '';
+                    if (document.getElementById('f-presencial')) document.getElementById('f-presencial').value = rec.presencial || 0;
+                    if (document.getElementById('f-zoom')) document.getElementById('f-zoom').value = rec.zoom || 0;
+                    if (document.getElementById('f-titulo')) document.getElementById('f-titulo').value = rec.titulo || '';
+                    if (document.getElementById('f-participantes')) document.getElementById('f-participantes').value = rec.participantes || '';
+                }
+            }
+
+            document.getElementById('record-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeRecordModal() {
+            document.getElementById('record-modal').classList.add('hidden');
+        }
+
+        async function saveRecord(e) {
+            e.preventDefault();
+            const type = document.getElementById('record-type').value;
+            const id = document.getElementById('record-id').value;
+
+            const data = {
+                congregacionId: userProfile.congregacionId,
+                modulo: type,
+                fecha: document.getElementById('f-fecha')?.value || '',
+                actualizado: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (type === 'campo') {
+                data.hora = document.getElementById('f-hora').value;
+                data.conductor = document.getElementById('f-conductor').value;
+                data.territorio = document.getElementById('f-territorio').value;
+                data.punto = document.getElementById('f-punto').value;
+            } else if (type === 'publica') {
+                data.horario = document.getElementById('f-horario').value;
+                data.ubicacion = document.getElementById('f-ubicacion').value;
+                data.publicadores = document.getElementById('f-publicadores').value;
+            } else if (type === 'asistencia') {
+                data.reunion = document.getElementById('f-reunion').value;
+                data.presencial = parseInt(document.getElementById('f-presencial').value) || 0;
+                data.zoom = parseInt(document.getElementById('f-zoom').value) || 0;
+                data.total = data.presencial + data.zoom;
+            } else {
+                data.titulo = document.getElementById('f-titulo').value;
+                data.participantes = document.getElementById('f-participantes').value;
+            }
+
+            try {
+                if (id) {
+                    await db.collection('registros').doc(id).update(data);
+                    showToast("Registro actualizado con éxito");
+                } else {
+                    await db.collection('registros').add(data);
+                    showToast("Registro creado con éxito");
+                }
+                closeRecordModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (confirm("¿Estás seguro de eliminar este registro?")) {
+                try {
+                    await db.collection('registros').doc(id).delete();
+                    showToast("Registro eliminado");
+                } catch (err) {
+                    showToast(err.message, 'error');
                 }
             }
         }
-    </script>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white flex flex-col min-h-screen">
 
-    <!-- Menú Principal de Navegación (Sticky Header) -->
-    <header class="sticky top-0 z-40 w-full bg-white/85 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3 md:gap-4">
-                
-                <!-- Logotipo y Marca -->
-                <div class="flex items-center justify-between">
-                    <a href="#" class="flex items-center gap-2.5 group focus:outline-none">
-                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="text-lg font-bold tracking-tight text-slate-900">Nexus<span class="text-brand-600">Hub</span></span>
-                            <span class="hidden sm:inline-block ml-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">v2.0</span>
-                        </div>
-                    </a>
+        async function approveUser(userId) {
+            try {
+                await db.collection('usuarios').doc(userId).update({ estado: 'aprobado' });
+                showToast("Usuario aprobado con éxito");
+                loadPendingUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
 
-                    <!-- Botón Menú Móvil -->
-                    <button id="mobile-menu-btn" type="button" aria-label="Abrir menú" class="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Enlaces de Navegación y Buscador -->
-                <div id="nav-content" class="hidden md:flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                    <!-- Enlaces Rápidos -->
-                    <nav aria-label="Navegación principal" class="flex flex-wrap items-center gap-1 sm:gap-2 text-sm font-medium text-slate-600">
-                        <button data-filter="todos" class="filter-btn active px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700 transition-colors">Todos</button>
-                        <button data-filter="desarrollo" class="filter-btn px-3 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Desarrollo</button>
-                        <button data-filter="diseno" class="filter-btn px-3 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Diseño</button>
-                        <button data-filter="ia" class="filter-btn px-3 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">IA y Datos</button>
-                        <button data-filter="productividad" class="filter-btn px-3 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-colors">Productividad</button>
-                    </nav>
-
-                    <!-- Barra de Búsqueda en Tiempo Real -->
-                    <div class="relative w-full md:w-56 lg:w-64">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-                            </svg>
-                        </div>
-                        <input 
-                            type="search" 
-                            id="search-input" 
-                            placeholder="Buscar recurso..." 
-                            aria-label="Buscar en los recursos"
-                            class="w-full pl-9 pr-8 py-1.5 text-sm bg-slate-100/80 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all"
-                        >
-                        <button id="clear-search" type="button" aria-label="Limpiar búsqueda" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Botón Destacado para Publicar Página -->
-                    <button id="open-publish-modal-btn" type="button" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.98] rounded-xl shadow-sm shadow-brand-600/25 transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>Publicar página</span>
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    </header>
-
-    <!-- Sección Hero / Cabecera del Portal -->
-    <section class="bg-gradient-to-b from-white to-slate-50 border-b border-slate-200/60">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 sm:py-11 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div class="max-w-3xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold mb-3.5">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                    Directorio Curado e Interactivo
-                </div>
-                <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-3">
-                    Biblioteca Central de Recursos y Enlaces
-                </h1>
-                <p class="text-base sm:text-lg text-slate-600 leading-relaxed">
-                    Accede rápidamente a plataformas esenciales o publica tus propias páginas y marcadores favoritos con almacenamiento local automático.
-                </p>
-            </div>
-            <div class="shrink-0">
-                <button id="hero-publish-btn" type="button" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-2xl transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>+ Nuevo enlace en el directorio</span>
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contenido Principal: Cuadrícula Dinámica de Tarjetas -->
-    <main id="top" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        
-        <!-- Barra de estado de resultados y filtros personalizados activos -->
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 text-sm text-slate-500">
-            <div class="flex flex-wrap items-center gap-3">
-                <p id="results-counter">Mostrando <span class="font-semibold text-slate-800">12</span> de 12 recursos disponibles</p>
-                <div id="custom-categories-bar" class="flex flex-wrap items-center gap-1.5"></div>
-            </div>
-            <span class="text-xs text-slate-400">Edita, elimina o copia enlaces directamente desde cada tarjeta</span>
-        </div>
-
-        <!-- Cuadrícula Responsiva (Renderizada dinámicamente desde JS + localStorage) -->
-        <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6"></div>
-
-        <!-- Estado vacío cuando no hay coincidencias -->
-        <div id="empty-state" class="hidden text-center py-16 px-4 bg-white rounded-2xl border border-dashed border-slate-300 mt-4">
-            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <h3 class="text-base font-semibold text-slate-900 mb-1">No se encontraron recursos</h3>
-            <p class="text-sm text-slate-500 mb-4">Prueba con otra palabra clave, restablece los filtros o publica una nueva página.</p>
-            <div class="flex flex-wrap items-center justify-center gap-3">
-                <button id="reset-filters-btn" type="button" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
-                    Ver todos los recursos
-                </button>
-                <button id="empty-publish-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm transition-colors">
-                    + Publicar página
-                </button>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Modal Accesible para Publicar / Editar Página -->
-    <div id="publish-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <!-- Fondo oscuro con desenfoque -->
-        <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
-
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
-            <div class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl border border-slate-200 transition-all">
-                
-                <!-- Cabecera del Modal -->
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                        </div>
-                        <h3 id="modal-title" class="text-lg font-bold text-slate-900">Publicar nueva página</h3>
-                    </div>
-                    <button id="close-modal-btn" type="button" aria-label="Cerrar ventana" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Formulario -->
-                <form id="resource-form" class="px-6 py-5 space-y-4" novalidate>
-                    <input type="hidden" id="resource-id">
-
-                    <!-- Título de la página -->
-                    <div>
-                        <label for="field-title" class="block text-sm font-semibold text-slate-700 mb-1">
-                            Título de la página <span class="text-rose-500">*</span>
-                        </label>
-                        <input type="text" id="field-title" required maxlength="60" placeholder="Ej. Documentación oficial de React"
-                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all">
-                        <p id="error-title" class="hidden mt-1 text-xs font-medium text-rose-600">Por favor ingresa un título válido (mínimo 2 caracteres).</p>
-                    </div>
-
-                    <!-- URL -->
-                    <div>
-                        <label for="field-url" class="block text-sm font-semibold text-slate-700 mb-1">
-                            URL de destino <span class="text-rose-500">*</span>
-                        </label>
-                        <input type="url" id="field-url" required placeholder="https://ejemplo.com"
-                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all">
-                        <p class="mt-1 text-[11px] text-slate-400">Si omites el protocolo, se agregará <code class="text-slate-600">https://</code> automáticamente.</p>
-                        <p id="error-url" class="hidden mt-1 text-xs font-medium text-rose-600">Ingresa una dirección web válida (ej. https://misitio.com).</p>
-                    </div>
-
-                    <!-- Categoría y Categoría Personalizada -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div>
-                            <label for="field-category" class="block text-sm font-semibold text-slate-700 mb-1">
-                                Categoría <span class="text-rose-500">*</span>
-                            </label>
-                            <select id="field-category" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all">
-                                <option value="desarrollo">Desarrollo</option>
-                                <option value="diseno">Diseño</option>
-                                <option value="ia">IA y Datos</option>
-                                <option value="productividad">Productividad</option>
-                                <option value="__custom__">+ Nueva categoría...</option>
-                            </select>
-                        </div>
-
-                        <div id="custom-category-wrapper" class="hidden">
-                            <label for="field-custom-category" class="block text-sm font-semibold text-slate-700 mb-1">
-                                Nombre de categoría <span class="text-rose-500">*</span>
-                            </label>
-                            <input type="text" id="field-custom-category" maxlength="25" placeholder="Ej. Marketing, Cloud..."
-                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all">
-                            <p id="error-custom-cat" class="hidden mt-1 text-xs font-medium text-rose-600">Escribe el nombre de la nueva categoría.</p>
-                        </div>
-                    </div>
-
-                    <!-- Descripción breve -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="field-description" class="block text-sm font-semibold text-slate-700">
-                                Descripción breve <span class="text-rose-500">*</span>
-                            </label>
-                            <span id="desc-char-count" class="text-xs text-slate-400">0 / 160</span>
-                        </div>
-                        <textarea id="field-description" rows="3" required maxlength="160" placeholder="Describe brevemente qué ofrece esta página o herramienta..."
-                            class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition-all resize-none"></textarea>
-                        <p id="error-description" class="hidden mt-1 text-xs font-medium text-rose-600">Agrega una descripción breve de al menos 6 caracteres.</p>
-                    </div>
-
-                    <!-- Selector de Icono y Color de Acento -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                        <div>
-                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Icono de tarjeta</span>
-                            <div id="icon-selector" class="grid grid-cols-4 gap-2"></div>
-                        </div>
-                        <div>
-                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Color de acento</span>
-                            <div id="color-selector" class="grid grid-cols-4 gap-2"></div>
-                        </div>
-                    </div>
-
-                    <!-- Botones de Acción -->
-                    <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
-                        <button type="button" id="cancel-modal-btn" class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="submit" id="submit-modal-btn" class="px-5 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-sm shadow-brand-600/20 transition-all">
-                            Publicar página
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Confirmación Personalizado (Eliminar / Restaurar) -->
-    <div id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <div id="confirm-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
-        <div class="flex min-h-full items-center justify-center p-4 text-center">
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl border border-slate-200 transition-all">
-                <div class="flex items-start gap-3.5">
-                    <div id="confirm-icon-wrap" class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 id="confirm-title" class="text-base font-bold text-slate-900">¿Eliminar este enlace?</h3>
-                        <p id="confirm-message" class="mt-1 text-sm text-slate-600">Esta acción quitará la tarjeta de tu directorio local.</p>
-                    </div>
-                </div>
-                <div class="mt-6 flex items-center justify-end gap-2.5">
-                    <button type="button" id="confirm-cancel-btn" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
-                        Cancelar
-                    </button>
-                    <button type="button" id="confirm-accept-btn" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-colors">
-                        Confirmar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notificación Flotante (Toast) -->
-    <div id="toast-notification" role="status" aria-live="polite" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 max-w-sm">
-        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-        <span id="toast-message">Acción completada</span>
-    </div>
-
-    <!-- Pie de Página con Utilidades de Respaldo y Restauración -->
-    <footer class="bg-white border-t border-slate-200/80 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-            <p>© 2026 <span class="font-semibold text-slate-700">NexusHub</span>. Directorio interactivo con guardado automático.</p>
-            
-            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                <button id="export-json-btn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Exportar JSON</span>
-                </button>
-
-                <label for="import-json-input" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    <span>Importar JSON</span>
-                    <input type="file" id="import-json-input" accept="application/json,.json" class="hidden">
-                </label>
-
-                <button id="restore-defaults-btn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Restaurar 12 iniciales</span>
-                </button>
-
-                <a href="#top" class="ml-1 text-xs font-medium hover:text-brand-600 transition-colors">Arriba ↑</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Lógica Completa de la Aplicación: CRUD, Validación, Persistencia, Respaldo y Filtros -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const STORAGE_KEY = 'nexushub_resources_v1';
-
-            // Catálogo de iconos SVG disponibles
-            const ICONS = {
-                globe: {
-                    label: 'Web',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />'
-                },
-                book: {
-                    label: 'Docs',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />'
-                },
-                code: {
-                    label: 'Código',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />'
-                },
-                palette: {
-                    label: 'Diseño',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />'
-                },
-                sparkles: {
-                    label: 'IA',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />'
-                },
-                layers: {
-                    label: 'UI',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />'
-                },
-                server: {
-                    label: 'Cloud',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />'
-                },
-                check: {
-                    label: 'Tareas',
-                    svg: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />'
-                }
-            };
-
-            // Paleta de colores de acento
-            const ACCENT_COLORS = {
-                blue:    { label: 'Azul',      box: 'bg-blue-50 text-blue-600 border-blue-100',       dot: 'bg-blue-500' },
-                indigo:  { label: 'Índigo',    box: 'bg-indigo-50 text-indigo-600 border-indigo-100', dot: 'bg-indigo-500' },
-                pink:    { label: 'Rosa',      box: 'bg-pink-50 text-pink-600 border-pink-100',       dot: 'bg-pink-500' },
-                cyan:    { label: 'Cian',      box: 'bg-cyan-50 text-cyan-600 border-cyan-100',       dot: 'bg-cyan-500' },
-                amber:   { label: 'Ámbar',     box: 'bg-amber-50 text-amber-600 border-amber-100',    dot: 'bg-amber-500' },
-                emerald: { label: 'Esmeralda', box: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500' },
-                violet:  { label: 'Violeta',   box: 'bg-violet-50 text-violet-600 border-violet-100', dot: 'bg-violet-500' },
-                slate:   { label: 'Oscuro',    box: 'bg-slate-900 text-white border-slate-800',       dot: 'bg-slate-800' }
-            };
-
-            // Etiquetas y estilos de categorías base
-            const BASE_CATEGORIES = {
-                desarrollo:    { label: 'Desarrollo',    badge: 'bg-blue-50 text-blue-700' },
-                diseno:        { label: 'Diseño',        badge: 'bg-pink-50 text-pink-700' },
-                ia:            { label: 'IA y Datos',    badge: 'bg-amber-50 text-amber-700' },
-                productividad: { label: 'Productividad', badge: 'bg-emerald-50 text-emerald-700' }
-            };
-
-            // 12 tarjetas iniciales por defecto
-            const DEFAULT_RESOURCES = [
-                {
-                    id: 'def-1',
-                    title: 'MDN Web Docs',
-                    url: 'https://developer.mozilla.org/es/',
-                    category: 'desarrollo',
-                    categoryLabel: 'Desarrollo',
-                    description: 'Documentación oficial y guías técnicas de referencia para estándares HTML, CSS, JavaScript y APIs web.',
-                    icon: 'book',
-                    color: 'blue',
-                    isCustom: false
-                },
-                {
-                    id: 'def-2',
-                    title: 'GitHub Repositorios',
-                    url: 'https://github.com',
-                    category: 'desarrollo',
-                    categoryLabel: 'Desarrollo',
-                    description: 'Plataforma líder de alojamiento de código fuente, control de versiones con Git y colaboración de software libre.',
-                    icon: 'code',
-                    color: 'slate',
-                    isCustom: false
-                },
-                {
-                    id: 'def-3',
-                    title: 'Figma UI/UX',
-                    url: 'https://www.figma.com',
-                    category: 'diseno',
-                    categoryLabel: 'Diseño',
-                    description: 'Herramienta colaborativa en la nube para diseño de interfaces, sistemas de diseño y prototipado interactivo.',
-                    icon: 'palette',
-                    color: 'pink',
-                    isCustom: false
-                },
-                {
-                    id: 'def-4',
-                    title: 'Tailwind CSS',
-                    url: 'https://tailwindcss.com',
-                    category: 'diseno',
-                    categoryLabel: 'Diseño',
-                    description: 'Framework CSS basado en clases utilitarias para construir interfaces modernas y responsivas sin salir del HTML.',
-                    icon: 'layers',
-                    color: 'cyan',
-                    isCustom: false
-                },
-                {
-                    id: 'def-5',
-                    title: 'Hugging Face',
-                    url: 'https://huggingface.co',
-                    category: 'ia',
-                    categoryLabel: 'IA y Datos',
-                    description: 'Comunidad y repositorio abierto de modelos de aprendizaje automático, conjuntos de datos y aplicaciones de IA.',
-                    icon: 'sparkles',
-                    color: 'amber',
-                    isCustom: false
-                },
-                {
-                    id: 'def-6',
-                    title: 'Notion Workspace',
-                    url: 'https://www.notion.so/es-es',
-                    category: 'productividad',
-                    categoryLabel: 'Productividad',
-                    description: 'Espacio de trabajo todo en uno para organizar notas, bases de conocimiento, wikis de equipo y gestión de proyectos.',
-                    icon: 'book',
-                    color: 'emerald',
-                    isCustom: false
-                },
-                {
-                    id: 'def-7',
-                    title: 'Vercel Cloud',
-                    url: 'https://vercel.com',
-                    category: 'desarrollo',
-                    categoryLabel: 'Desarrollo',
-                    description: 'Plataforma de despliegue continuo y alojamiento edge optimizada para sitios estáticos y aplicaciones frontend modernas.',
-                    icon: 'server',
-                    color: 'indigo',
-                    isCustom: false
-                },
-                {
-                    id: 'def-8',
-                    title: 'Heroicons SVG',
-                    url: 'https://heroicons.com',
-                    category: 'diseno',
-                    categoryLabel: 'Diseño',
-                    description: 'Colección gratuita de iconos vectoriales SVG diseñados artesanalmente por los creadores de Tailwind CSS.',
-                    icon: 'sparkles',
-                    color: 'violet',
-                    isCustom: false
-                },
-                {
-                    id: 'def-9',
-                    title: 'Kaggle Ciencia de Datos',
-                    url: 'https://www.kaggle.com',
-                    category: 'ia',
-                    categoryLabel: 'IA y Datos',
-                    description: 'Competiciones de ciencia de datos, cuadernos Jupyter en la nube y miles de datasets públicos listos para analizar.',
-                    icon: 'globe',
-                    color: 'blue',
-                    isCustom: false
-                },
-                {
-                    id: 'def-10',
-                    title: 'Linear App',
-                    url: 'https://linear.app',
-                    category: 'productividad',
-                    categoryLabel: 'Productividad',
-                    description: 'Sistema ágil de seguimiento de incidencias, planificación de sprints y hojas de ruta para equipos de producto.',
-                    icon: 'check',
-                    color: 'violet',
-                    isCustom: false
-                },
-                {
-                    id: 'def-11',
-                    title: 'Can I Use',
-                    url: 'https://caniuse.com',
-                    category: 'desarrollo',
-                    categoryLabel: 'Desarrollo',
-                    description: 'Tablas actualizadas de compatibilidad de características HTML5, CSS3 y APIs modernas en navegadores web.',
-                    icon: 'check',
-                    color: 'amber',
-                    isCustom: false
-                },
-                {
-                    id: 'def-12',
-                    title: 'Unsplash Fotografía',
-                    url: 'https://unsplash.com/es',
-                    category: 'diseno',
-                    categoryLabel: 'Diseño',
-                    description: 'Banco de fotografías en alta resolución libres de derechos aportadas por una comunidad global de creadores.',
-                    icon: 'globe',
-                    color: 'pink',
-                    isCustom: false
-                }
-            ];
-
-            // Estado de la aplicación
-            let resources = loadResources();
-            let currentCategory = 'todos';
-            let currentQuery = '';
-            let selectedIcon = 'globe';
-            let selectedColor = 'indigo';
-            let toastTimeout = null;
-            let confirmCallback = null;
-
-            // Referencias DOM
-            const cardsGrid = document.getElementById('cards-grid');
-            const resultsCounter = document.getElementById('results-counter');
-            const customCategoriesBar = document.getElementById('custom-categories-bar');
-            const emptyState = document.getElementById('empty-state');
-            const searchInput = document.getElementById('search-input');
-            const clearSearchBtn = document.getElementById('clear-search');
-            const filterBtns = document.querySelectorAll('.filter-btn');
-            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            const navContent = document.getElementById('nav-content');
-
-            // Referencias Modal Publicar/Editar
-            const publishModal = document.getElementById('publish-modal');
-            const modalBackdrop = document.getElementById('modal-backdrop');
-            const modalTitle = document.getElementById('modal-title');
-            const resourceForm = document.getElementById('resource-form');
-            const resourceIdInput = document.getElementById('resource-id');
-            const fieldTitle = document.getElementById('field-title');
-            const fieldUrl = document.getElementById('field-url');
-            const fieldCategory = document.getElementById('field-category');
-            const customCategoryWrapper = document.getElementById('custom-category-wrapper');
-            const fieldCustomCategory = document.getElementById('field-custom-category');
-            const fieldDescription = document.getElementById('field-description');
-            const descCharCount = document.getElementById('desc-char-count');
-            const iconSelector = document.getElementById('icon-selector');
-            const colorSelector = document.getElementById('color-selector');
-            const submitModalBtn = document.getElementById('submit-modal-btn');
-
-            // Referencias Modal Confirmación
-            const confirmModal = document.getElementById('confirm-modal');
-            const confirmTitle = document.getElementById('confirm-title');
-            const confirmMessage = document.getElementById('confirm-message');
-            const confirmAcceptBtn = document.getElementById('confirm-accept-btn');
-            const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-            const confirmBackdrop = document.getElementById('confirm-backdrop');
-
-            // Toast
-            const toast = document.getElementById('toast-notification');
-            const toastMessage = document.getElementById('toast-message');
-
-            // Cargar desde localStorage con fallback seguro
-            function loadResources() {
+        async function rejectUser(userId) {
+            if (confirm("¿Rechazar y eliminar esta solicitud?")) {
                 try {
-                    const saved = localStorage.getItem(STORAGE_KEY);
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        if (Array.isArray(parsed)) return parsed;
-                    }
-                } catch (e) {
-                    console.warn('No se pudo leer localStorage:', e);
-                }
-                return structuredClone ? structuredClone(DEFAULT_RESOURCES) : JSON.parse(JSON.stringify(DEFAULT_RESOURCES));
-            }
-
-            // Guardar en localStorage
-            function saveResources() {
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(resources));
-                } catch (e) {
-                    showToast('Advertencia: No se pudo guardar en el almacenamiento local');
-                }
-            }
-
-            // Escapar HTML para evitar inyección XSS
-            function escapeHTML(str) {
-                const div = document.createElement('div');
-                div.textContent = str;
-                return div.innerHTML;
-            }
-
-            // Normalizar slug de categoría
-            function slugify(text) {
-                return text
-                    .toString()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-+|-+$/g, '') || 'general';
-            }
-
-            // Validar y normalizar URL (autocompleta https:// si falta)
-            function normalizeAndValidateUrl(rawUrl) {
-                let trimmed = rawUrl.trim();
-                if (!trimmed) return null;
-                if (!/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)) {
-                    trimmed = 'https://' + trimmed;
-                }
-                try {
-                    const urlObj = new URL(trimmed);
-                    if ((urlObj.protocol === 'http:' || urlObj.protocol === 'https:') && urlObj.hostname.includes('.')) {
-                        return urlObj.href;
-                    }
-                } catch (_) {
-                    return null;
-                }
-                return null;
-            }
-
-            // Renderizar selectores visuales de icono y color dentro del modal
-            function renderModalPickers() {
-                iconSelector.innerHTML = Object.entries(ICONS).map(([key, item]) => {
-                    const isSelected = selectedIcon === key;
-                    return `
-                        <button type="button" data-icon-key="${key}" title="${item.label}"
-                            class="icon-pick-btn flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition-all ${isSelected ? 'border-brand-600 bg-brand-50 text-brand-700 ring-2 ring-brand-500/30' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}">
-                            <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${item.svg}</svg>
-                            <span class="text-[10px] font-medium">${item.label}</span>
-                        </button>
-                    `;
-                }).join('');
-
-                colorSelector.innerHTML = Object.entries(ACCENT_COLORS).map(([key, item]) => {
-                    const isSelected = selectedColor === key;
-                    return `
-                        <button type="button" data-color-key="${key}" title="${item.label}"
-                            class="color-pick-btn flex flex-col items-center justify-center p-2 rounded-xl border text-xs transition-all ${isSelected ? 'border-brand-600 bg-brand-50 text-brand-700 ring-2 ring-brand-500/30' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}">
-                            <span class="w-4 h-4 rounded-full ${item.dot} mb-0.5 shadow-inner"></span>
-                            <span class="text-[10px] font-medium">${item.label}</span>
-                        </button>
-                    `;
-                }).join('');
-
-                iconSelector.querySelectorAll('.icon-pick-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        selectedIcon = btn.getAttribute('data-icon-key');
-                        renderModalPickers();
-                    });
-                });
-
-                colorSelector.querySelectorAll('.color-pick-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        selectedColor = btn.getAttribute('data-color-key');
-                        renderModalPickers();
-                    });
-                });
-            }
-
-            // Renderizar píldoras de categorías personalizadas si existen
-            function renderCustomCategoriesBar() {
-                const customMap = new Map();
-                resources.forEach(item => {
-                    if (!BASE_CATEGORIES[item.category]) {
-                        customMap.set(item.category, item.categoryLabel || item.category);
-                    }
-                });
-
-                if (customMap.size === 0) {
-                    customCategoriesBar.innerHTML = '';
-                    return;
-                }
-
-                let html = '<span class="text-xs text-slate-400 mr-1">Personalizadas:</span>';
-                customMap.forEach((label, slug) => {
-                    const active = currentCategory === slug;
-                    html += `
-                        <button type="button" data-custom-filter="${slug}"
-                            class="custom-cat-pill px-2.5 py-0.5 text-xs font-medium rounded-full border transition-colors ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300'}">
-                            ${escapeHTML(label)}
-                        </button>
-                    `;
-                });
-                customCategoriesBar.innerHTML = html;
-
-                customCategoriesBar.querySelectorAll('.custom-cat-pill').forEach(pill => {
-                    pill.addEventListener('click', () => {
-                        const slug = pill.getAttribute('data-custom-filter');
-                        setActiveCategory(currentCategory === slug ? 'todos' : slug);
-                    });
-                });
-            }
-
-            // Sincronizar estado visual de botones de filtro
-            function setActiveCategory(categorySlug) {
-                currentCategory = categorySlug;
-                filterBtns.forEach(b => {
-                    const isMatch = b.getAttribute('data-filter') === categorySlug;
-                    b.classList.toggle('active', isMatch);
-                    b.classList.toggle('bg-brand-50', isMatch);
-                    b.classList.toggle('text-brand-700', isMatch);
-                    b.classList.toggle('hover:bg-slate-100', !isMatch);
-                    b.classList.toggle('hover:text-slate-900', !isMatch);
-                });
-                renderCards();
-            }
-
-            // Renderizar cuadrícula de tarjetas
-            function renderCards() {
-                renderCustomCategoriesBar();
-
-                const normalizedQuery = currentQuery.trim().toLowerCase();
-                const filtered = resources.filter(item => {
-                    const matchesCategory = currentCategory === 'todos' || item.category === currentCategory;
-                    const matchesSearch = !normalizedQuery ||
-                        item.title.toLowerCase().includes(normalizedQuery) ||
-                        item.description.toLowerCase().includes(normalizedQuery) ||
-                        (item.categoryLabel || '').toLowerCase().includes(normalizedQuery);
-                    return matchesCategory && matchesSearch;
-                });
-
-                resultsCounter.innerHTML = `Mostrando <span class="font-semibold text-slate-800">${filtered.length}</span> de ${resources.length} recursos disponibles`;
-
-                if (filtered.length === 0) {
-                    cardsGrid.innerHTML = '';
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-
-                emptyState.classList.add('hidden');
-
-                cardsGrid.innerHTML = filtered.map(item => {
-                    const iconObj = ICONS[item.icon] || ICONS.globe;
-                    const colorObj = ACCENT_COLORS[item.color] || ACCENT_COLORS.indigo;
-                    const baseCat = BASE_CATEGORIES[item.category];
-                    const badgeClasses = baseCat ? baseCat.badge : 'bg-indigo-50 text-indigo-700';
-                    const catLabel = baseCat ? baseCat.label : (item.categoryLabel || item.category);
-
-                    return `
-                        <article class="resource-card group relative bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1 hover:border-brand-300 transition-all duration-300 flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-start justify-between gap-3 mb-4">
-                                    <div class="w-12 h-12 rounded-xl ${colorObj.box} flex items-center justify-center border group-hover:scale-105 transition-transform shrink-0">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            ${iconObj.svg}
-                                        </svg>
-                                    </div>
-                                    <div class="flex flex-col items-end gap-1.5">
-                                        <span class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full ${badgeClasses}">
-                                            ${escapeHTML(catLabel)}
-                                        </span>
-                                        ${item.isCustom ? '<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-100">Publicada</span>' : ''}
-                                    </div>
-                                </div>
-                                <h2 class="text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors mb-1.5 line-clamp-1" title="${escapeHTML(item.title)}">
-                                    ${escapeHTML(item.title)}
-                                </h2>
-                                <p class="text-sm text-slate-600 leading-relaxed mb-5 line-clamp-3">
-                                    ${escapeHTML(item.description)}
-                                </p>
-                            </div>
-                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                                <a href="${escapeHTML(item.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors">
-                                    <span>Visitar recurso</span>
-                                    <svg class="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                    </svg>
-                                </a>
-                                <div class="flex items-center gap-0.5">
-                                    <button type="button" data-action="copy" data-url="${escapeHTML(item.url)}" title="Copiar enlace" aria-label="Copiar enlace"
-                                        class="card-action-btn p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                    </button>
-                                    <button type="button" data-action="edit" data-id="${escapeHTML(item.id)}" title="Editar tarjeta" aria-label="Editar tarjeta"
-                                        class="card-action-btn p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </button>
-                                    <button type="button" data-action="delete" data-id="${escapeHTML(item.id)}" title="Eliminar tarjeta" aria-label="Eliminar tarjeta"
-                                        class="card-action-btn p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </article>
-                    `;
-                }).join('');
-            }
-
-            // Delegación de eventos en las tarjetas (Copiar, Editar, Eliminar)
-            cardsGrid.addEventListener('click', (e) => {
-                const btn = e.target.closest('.card-action-btn');
-                if (!btn) return;
-
-                const action = btn.getAttribute('data-action');
-                if (action === 'copy') {
-                    copyToClipboard(btn.getAttribute('data-url'));
-                } else if (action === 'edit') {
-                    const item = resources.find(r => r.id === btn.getAttribute('data-id'));
-                    if (item) openPublishModal(item);
-                } else if (action === 'delete') {
-                    const item = resources.find(r => r.id === btn.getAttribute('data-id'));
-                    if (item) {
-                        openConfirmModal(
-                            '¿Eliminar esta página?',
-                            `Se eliminará "${item.title}" de tu directorio guardado en este navegador.`,
-                            'Eliminar',
-                            () => {
-                                resources = resources.filter(r => r.id !== item.id);
-                                saveResources();
-                                renderCards();
-                                showToast(`"${item.title}" eliminada`);
-                            }
-                        );
-                    }
-                }
-            });
-
-            // Abrir modal en modo Publicar o Editar
-            function openPublishModal(editItem = null) {
-                clearFormErrors();
-                if (editItem) {
-                    modalTitle.textContent = 'Editar página publicada';
-                    submitModalBtn.textContent = 'Guardar cambios';
-                    resourceIdInput.value = editItem.id;
-                    fieldTitle.value = editItem.title;
-                    fieldUrl.value = editItem.url;
-                    fieldDescription.value = editItem.description;
-                    selectedIcon = editItem.icon || 'globe';
-                    selectedColor = editItem.color || 'indigo';
-
-                    if (BASE_CATEGORIES[editItem.category]) {
-                        fieldCategory.value = editItem.category;
-                        customCategoryWrapper.classList.add('hidden');
-                        fieldCustomCategory.value = '';
-                    } else {
-                        fieldCategory.value = '__custom__';
-                        customCategoryWrapper.classList.remove('hidden');
-                        fieldCustomCategory.value = editItem.categoryLabel || editItem.category;
-                    }
-                } else {
-                    modalTitle.textContent = 'Publicar nueva página';
-                    submitModalBtn.textContent = 'Publicar página';
-                    resourceForm.reset();
-                    resourceIdInput.value = '';
-                    customCategoryWrapper.classList.add('hidden');
-                    selectedIcon = 'globe';
-                    selectedColor = 'indigo';
-                }
-
-                descCharCount.textContent = `${fieldDescription.value.length} / 160`;
-                renderModalPickers();
-                publishModal.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
-                setTimeout(() => fieldTitle.focus(), 50);
-            }
-
-            function closePublishModal() {
-                publishModal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-            }
-
-            function clearFormErrors() {
-                ['error-title', 'error-url', 'error-custom-cat', 'error-description'].forEach(id => {
-                    document.getElementById(id).classList.add('hidden');
-                });
-            }
-
-            // Mostrar/ocultar campo de categoría personalizada
-            fieldCategory.addEventListener('change', () => {
-                if (fieldCategory.value === '__custom__') {
-                    customCategoryWrapper.classList.remove('hidden');
-                    fieldCustomCategory.focus();
-                } else {
-                    customCategoryWrapper.classList.add('hidden');
-                }
-            });
-
-            // Contador de caracteres en descripción
-            fieldDescription.addEventListener('input', () => {
-                descCharCount.textContent = `${fieldDescription.value.length} / 160`;
-            });
-
-            // Envío del formulario (Crear o Actualizar)
-            resourceForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                clearFormErrors();
-
-                let isValid = true;
-                const titleVal = fieldTitle.value.trim();
-                const normalizedUrl = normalizeAndValidateUrl(fieldUrl.value);
-                const descVal = fieldDescription.value.trim();
-                const isCustomCat = fieldCategory.value === '__custom__';
-                const customCatVal = fieldCustomCategory.value.trim();
-
-                if (titleVal.length < 2) {
-                    document.getElementById('error-title').classList.remove('hidden');
-                    isValid = false;
-                }
-                if (!normalizedUrl) {
-                    document.getElementById('error-url').classList.remove('hidden');
-                    isValid = false;
-                }
-                if (isCustomCat && customCatVal.length < 2) {
-                    document.getElementById('error-custom-cat').classList.remove('hidden');
-                    isValid = false;
-                }
-                if (descVal.length < 6) {
-                    document.getElementById('error-description').classList.remove('hidden');
-                    isValid = false;
-                }
-
-                if (!isValid) return;
-
-                const catSlug = isCustomCat ? slugify(customCatVal) : fieldCategory.value;
-                const catLabel = isCustomCat ? customCatVal : BASE_CATEGORIES[catSlug].label;
-                const editingId = resourceIdInput.value;
-
-                if (editingId) {
-                    resources = resources.map(item => {
-                        if (item.id === editingId) {
-                            return {
-                                ...item,
-                                title: titleVal,
-                                url: normalizedUrl,
-                                category: catSlug,
-                                categoryLabel: catLabel,
-                                description: descVal,
-                                icon: selectedIcon,
-                                color: selectedColor
-                            };
-                        }
-                        return item;
-                    });
-                    saveResources();
-                    closePublishModal();
-                    renderCards();
-                    showToast('Página actualizada correctamente');
-                } else {
-                    const newEntry = {
-                        id: 'user-' + Date.now(),
-                        title: titleVal,
-                        url: normalizedUrl,
-                        category: catSlug,
-                        categoryLabel: catLabel,
-                        description: descVal,
-                        icon: selectedIcon,
-                        color: selectedColor,
-                        isCustom: true
-                    };
-                    resources.unshift(newEntry);
-                    saveResources();
-                    closePublishModal();
-                    setActiveCategory('todos');
-                    showToast(`"${titleVal}" publicada en el directorio`);
-                }
-            });
-
-            // Modal de confirmación genérico
-            function openConfirmModal(title, message, acceptLabel, onConfirm) {
-                confirmTitle.textContent = title;
-                confirmMessage.textContent = message;
-                confirmAcceptBtn.textContent = acceptLabel;
-                confirmCallback = onConfirm;
-                confirmModal.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
-            }
-
-            function closeConfirmModal() {
-                confirmModal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-                confirmCallback = null;
-            }
-
-            confirmAcceptBtn.addEventListener('click', () => {
-                if (typeof confirmCallback === 'function') confirmCallback();
-                closeConfirmModal();
-            });
-            confirmCancelBtn.addEventListener('click', closeConfirmModal);
-            confirmBackdrop.addEventListener('click', closeConfirmModal);
-
-            // Botones de apertura/cierre de modal
-            document.getElementById('open-publish-modal-btn').addEventListener('click', () => openPublishModal());
-            document.getElementById('hero-publish-btn').addEventListener('click', () => openPublishModal());
-            document.getElementById('empty-publish-btn').addEventListener('click', () => openPublishModal());
-            document.getElementById('close-modal-btn').addEventListener('click', closePublishModal);
-            document.getElementById('cancel-modal-btn').addEventListener('click', closePublishModal);
-            modalBackdrop.addEventListener('click', closePublishModal);
-
-            // Cerrar modales con tecla Escape
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    if (!publishModal.classList.contains('hidden')) closePublishModal();
-                    if (!confirmModal.classList.contains('hidden')) closeConfirmModal();
-                }
-            });
-
-            // Menú móvil
-            mobileMenuBtn.addEventListener('click', () => {
-                navContent.classList.toggle('hidden');
-                navContent.classList.toggle('flex');
-            });
-
-            // Filtros de navegación superior
-            filterBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    setActiveCategory(btn.getAttribute('data-filter'));
-                });
-            });
-
-            // Buscador instantáneo
-            searchInput.addEventListener('input', (e) => {
-                currentQuery = e.target.value;
-                clearSearchBtn.classList.toggle('hidden', currentQuery.trim().length === 0);
-                renderCards();
-            });
-
-            clearSearchBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                currentQuery = '';
-                clearSearchBtn.classList.add('hidden');
-                renderCards();
-                searchInput.focus();
-            });
-
-            document.getElementById('reset-filters-btn').addEventListener('click', () => {
-                searchInput.value = '';
-                currentQuery = '';
-                clearSearchBtn.classList.add('hidden');
-                setActiveCategory('todos');
-            });
-
-            // Exportar respaldo JSON
-            document.getElementById('export-json-btn').addEventListener('click', () => {
-                const dataStr = JSON.stringify(resources, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `nexushub-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast('Respaldo JSON descargado');
-            });
-
-            // Importar respaldo JSON
-            document.getElementById('import-json-input').addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const imported = JSON.parse(event.target.result);
-                        if (!Array.isArray(imported) || imported.length === 0) {
-                            throw new Error('Formato inválido');
-                        }
-                        const sanitized = imported.filter(item => item && item.title && item.url).map((item, idx) => ({
-                            id: item.id || `imp-${Date.now()}-${idx}`,
-                            title: String(item.title).slice(0, 60),
-                            url: normalizeAndValidateUrl(String(item.url)) || 'https://ejemplo.com',
-                            category: item.category ? slugify(String(item.category)) : 'desarrollo',
-                            categoryLabel: item.categoryLabel ? String(item.categoryLabel).slice(0, 25) : 'General',
-                            description: item.description ? String(item.description).slice(0, 160) : 'Recurso importado.',
-                            icon: ICONS[item.icon] ? item.icon : 'globe',
-                            color: ACCENT_COLORS[item.color] ? item.color : 'indigo',
-                            isCustom: Boolean(item.isCustom)
-                        }));
-
-                        if (sanitized.length === 0) throw new Error('Sin entradas válidas');
-                        resources = sanitized;
-                        saveResources();
-                        setActiveCategory('todos');
-                        showToast(`Se importaron ${sanitized.length} páginas correctamente`);
-                    } catch (err) {
-                        showToast('Error: El archivo JSON no es válido');
-                    }
-                    e.target.value = '';
-                };
-                reader.readAsText(file);
-            });
-
-            // Restaurar las 12 tarjetas iniciales
-            document.getElementById('restore-defaults-btn').addEventListener('click', () => {
-                openConfirmModal(
-                    '¿Restaurar las 12 tarjetas iniciales?',
-                    'Se reemplazarán tus cambios actuales por los 12 enlaces originales de NexusHub.',
-                    'Restaurar',
-                    () => {
-                        resources = structuredClone ? structuredClone(DEFAULT_RESOURCES) : JSON.parse(JSON.stringify(DEFAULT_RESOURCES));
-                        saveResources();
-                        searchInput.value = '';
-                        currentQuery = '';
-                        clearSearchBtn.classList.add('hidden');
-                        setActiveCategory('todos');
-                        showToast('Directorio restaurado a las 12 tarjetas iniciales');
-                    }
-                );
-            });
-
-            // Copiar URL al portapapeles
-            function copyToClipboard(url) {
-                const tempInput = document.createElement('input');
-                tempInput.value = url;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                try {
-                    document.execCommand('copy');
-                    showToast(`Enlace copiado: ${url}`);
+                    await db.collection('usuarios').doc(userId).delete();
+                    showToast("Solicitud rechazada");
+                    loadPendingUsers();
                 } catch (err) {
-                    showToast('No se pudo copiar el enlace');
+                    showToast(err.message, 'error');
                 }
-                document.body.removeChild(tempInput);
+            }
+        }
+
+        function renderCurrentModule() {
+            const container = document.getElementById('module-container');
+            const filteredRecords = records.filter(r => r.modulo === currentModule);
+
+            if (currentModule === 'admin') {
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                            <h2 class="text-lg font-bold text-slate-800 mb-4">Solicitudes de Registro Pendientes</h2>
+                            ${pendingUsers.length === 0 ? '<p class="text-sm text-slate-500">No hay usuarios pendientes de aprobación.</p>' : `
+                                <div class="divide-y divide-slate-100">
+                                    ${pendingUsers.map(u => `
+                                        <div class="py-3 flex items-center justify-between gap-4">
+                                            <div>
+                                                <p class="font-semibold text-sm text-slate-800">${u.nombre}</p>
+                                                <p class="text-xs text-slate-500">${u.email} • Congregación: ${u.congregacion} (#${u.numeroCong})</p>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onclick="approveUser('${u.id}')" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg">Aprobar</button>
+                                                <button onclick="rejectUser('${u.id}')" class="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg">Rechazar</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>`;
+                lucide.createIcons();
+                return;
             }
 
-            // Notificación visual flotante
-            function showToast(msg) {
-                toastMessage.textContent = msg;
-                toast.classList.remove('translate-y-20', 'opacity-0');
-                clearTimeout(toastTimeout);
-                toastTimeout = setTimeout(() => {
-                    toast.classList.add('translate-y-20', 'opacity-0');
-                }, 2800);
-            }
+            let title = currentModule === 'campo' ? 'Servicio del Campo' :
+                        currentModule === 'publica' ? 'Predicación Pública' :
+                        currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
+                        currentModule === 'discursos' ? 'Discursos Públicos' :
+                        currentModule === 'vidaministerio' ? 'Reunión Vida y Ministerio' : 'Control de Asistencia';
 
-            // Renderizado inicial
-            renderCards();
-        });
+            container.innerHTML = `
+                <div class="space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">${title}</h2>
+                            <p class="text-xs sm:text-sm text-slate-500">Gestión sincronizada en tiempo real.</p>
+                        </div>
+                        <button onclick="openRecordModal('${currentModule}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-xl shadow transition flex items-center gap-1.5 self-start">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Agregar Registro
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                        <th class="py-3 px-4">Fecha</th>
+                                        ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th>' : ''}
+                                        ${currentModule === 'publica' ? '<th class="py-3 px-4">Horario</th><th class="py-3 px-4">Ubicación</th><th class="py-3 px-4">Publicadores</th>' : ''}
+                                        ${currentModule === 'asistencia' ? '<th class="py-3 px-4">Reunión</th><th class="py-3 px-4">Presencial</th><th class="py-3 px-4">Zoom</th><th class="py-3 px-4">Total</th>' : ''}
+                                        ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
+                                        <th class="py-3 px-4 text-right no-print">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 text-sm">
+                                    ${filteredRecords.length === 0 ? `<tr><td colspan="6" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
+                                        filteredRecords.map(r => `
+                                            <tr class="hover:bg-slate-50/50">
+                                                <td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>
+                                                ${currentModule === 'campo' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.territorio || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.punto || '-'}</td>
+                                                ` : ''}
+                                                ${currentModule === 'publica' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.horario || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.ubicacion || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.publicadores || '-'}</td>
+                                                ` : ''}
+                                                ${currentModule === 'asistencia' ? `
+                                                    <td class="py-3 px-4 text-slate-600">${r.reunion || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-800">${r.presencial || 0}</td>
+                                                    <td class="py-3 px-4 text-slate-800">${r.zoom || 0}</td>
+                                                    <td class="py-3 px-4 font-bold text-indigo-600">${r.total || 0}</td>
+                                                ` : ''}
+                                                ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? `
+                                                    <td class="py-3 px-4 text-slate-800 font-semibold">${r.titulo || '-'}</td>
+                                                    <td class="py-3 px-4 text-slate-600">${r.participantes || '-'}</td>
+                                                ` : ''}
+                                                <td class="py-3 px-4 text-right no-print space-x-2">
+                                                    <button onclick="openRecordModal('${currentModule}', '${r.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                                    <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
     </script>
 </body>
 </html>

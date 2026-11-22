@@ -120,7 +120,6 @@
                 <div class="max-w-7xl mx-auto px-2 flex space-x-1 py-1.5" id="main-tabs">
                     <button onclick="switchModule('campo')" data-tab="campo" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i> Servicio del Campo</button>
                     <button onclick="switchModule('publica')" data-tab="publica" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="store" class="w-4 h-4"></i> Predicación Pública</button>
-                    <button onclick="switchModule('publicaciones')" data-tab="publicaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="book" class="w-4 h-4"></i> Informe de Publicaciones</button>
                     <button onclick="switchModule('inventario')" data-tab="inventario" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="package" class="w-4 h-4"></i> Inventario de Publicaciones</button>
                     <button onclick="switchModule('asignaciones')" data-tab="asignaciones" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="mic" class="w-4 h-4"></i> Asignaciones</button>
                     <button onclick="switchModule('discursos')" data-tab="discursos" class="tab-btn whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="presentation" class="w-4 h-4"></i> Discursos Públicos</button>
@@ -342,19 +341,6 @@
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Ubicación</label><input type="text" id="f-ubicacion" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Publicadores</label><input type="text" id="f-publicadores" placeholder="Nombre 1 y Nombre 2" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
                 `;
-            } else if (type === 'publicaciones') {
-                html = `
-                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Mes y Año</label><input type="month" id="f-mes" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nombre del Publicador</label><input type="text" id="f-publicador" required placeholder="Ej. Juan Pérez" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tratados</label><input type="number" id="f-tratados" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Revistas</label><input type="number" id="f-revistas" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Folletos</label><input type="number" id="f-folletos" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Libros</label><input type="number" id="f-libros" value="0" min="0" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
-                    </div>
-                `;
             } else if (type === 'asistencia') {
                 html = `
                     <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Fecha</label><input type="date" id="f-fecha" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
@@ -429,13 +415,6 @@
                 data.horario = document.getElementById('f-horario').value;
                 data.ubicacion = document.getElementById('f-ubicacion').value;
                 data.publicadores = document.getElementById('f-publicadores').value;
-            } else if (type === 'publicaciones') {
-                data.mes = document.getElementById('f-mes').value;
-                data.publicador = document.getElementById('f-publicador').value;
-                data.tratados = parseInt(document.getElementById('f-tratados').value) || 0;
-                data.revistas = parseInt(document.getElementById('f-revistas').value) || 0;
-                data.folletos = parseInt(document.getElementById('f-folletos').value) || 0;
-                data.libros = parseInt(document.getElementById('f-libros').value) || 0;
             } else if (type === 'asistencia') {
                 data.reunion = document.getElementById('f-reunion').value;
                 data.presencial = parseInt(document.getElementById('f-presencial').value) || 0;
@@ -727,7 +706,6 @@
 
             let title = currentModule === 'campo' ? 'Servicio del Campo' :
                         currentModule === 'publica' ? 'Predicación Pública' :
-                        currentModule === 'publicaciones' ? 'Informe Mensual de Publicaciones' :
                         currentModule === 'asignaciones' ? 'Asignaciones de la Congregación' :
                         currentModule === 'discursos' ? 'Discursos Públicos' : 'Reunión Vida y Ministerio';
 
@@ -748,7 +726,7 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        ${currentModule === 'publicaciones' ? '<th class="py-3 px-4">Mes</th><th class="py-3 px-4">Publicador</th><th class="py-3 px-4">Tratados</th><th class="py-3 px-4">Revistas</th><th class="py-3 px-4">Folletos</th><th class="py-3 px-4">Libros</th>' : '<th class="py-3 px-4">Fecha</th>'}
+                                        ${'<th class="py-3 px-4">Fecha</th>'}
                                         ${currentModule === 'campo' ? '<th class="py-3 px-4">Hora</th><th class="py-3 px-4">Conductor</th><th class="py-3 px-4">Territorio</th><th class="py-3 px-4">Punto</th><th class="py-3 px-4">Concluido</th>' : ''}
                                         ${currentModule === 'publica' ? '<th class="py-3 px-4">Horario</th><th class="py-3 px-4">Ubicación</th><th class="py-3 px-4">Publicadores</th>' : ''}
                                         ${['asignaciones', 'discursos', 'vidaministerio'].includes(currentModule) ? '<th class="py-3 px-4">Detalle / Tema</th><th class="py-3 px-4">Participante(s)</th>' : ''}
@@ -759,14 +737,7 @@
                                     ${filteredRecords.length === 0 ? `<tr><td colspan="7" class="text-center py-8 text-slate-400">No hay registros creados en este módulo.</td></tr>` : 
                                         filteredRecords.map(r => `
                                             <tr class="hover:bg-slate-50/50">
-                                                ${currentModule === 'publicaciones' ? `
-                                                    <td class="py-3 px-4 font-medium text-slate-800">${r.mes || '-'}</td>
-                                                    <td class="py-3 px-4 font-semibold text-slate-800">${r.publicador || '-'}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.tratados || 0}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.revistas || 0}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.folletos || 0}</td>
-                                                    <td class="py-3 px-4 text-slate-600">${r.libros || 0}</td>
-                                                ` : `<td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>`}
+                                                ${`<td class="py-3 px-4 font-medium text-slate-800">${r.fecha || '-'}</td>`}
                                                 ${currentModule === 'campo' ? `
                                                     <td class="py-3 px-4 text-slate-600">${r.hora || '-'}</td>
                                                     <td class="py-3 px-4 text-slate-800 font-semibold">${r.conductor || '-'}</td>
